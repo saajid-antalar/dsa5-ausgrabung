@@ -216,7 +216,8 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   if (last.rerolled) h += `<p class="ausg-calc">↻ ${e(last.rerolled)} hat einen Schicksalspunkt eingesetzt.</p>`;
   h += `<h4 class="ausg-evt">${e(last.ev.title)}</h4><p>${e(last.ev.text)}</p>`;
   if (last.ev.extra) h += `<p>${e(last.ev.extra)}</p>`;
-  if (last.ev.victim) h += `<p class="ausg-badtext">Getroffen: ${e(last.ev.victim)}</p>`;
+  if (last.ev.victim) h += `<p class="ausg-badtext">Unter den Arbeitern: ${e(last.ev.victim)}</p>`;
+  if (last.ev.magnet) h += `<p class="ausg-badtext"><i>${e(last.ev.magnet)}</i></p>`;
   if (last.rock) h += `<p><i>${e(last.rock)}</i></p>`;
   if (last.key) h += `<div class="ausg-key">✦ <b>Erster Fund:</b> ${e(last.key)}</div>`;
   if (last.insight) h += `<div class="ausg-key">💡 <b>Erkenntnis:</b> ${e(last.insight)}</div>`;
@@ -241,11 +242,11 @@ export async function postStoryCard(def, rec, eff, test) {
     + (def.public ? `<p>${e(def.public)}</p>` : "")
     + (def.gm ? `<p class="ausg-calc">Nur SL: ${e(def.gm)}</p>` : "")
     + (eff ? `<p class="ausg-cost">Wirkung: ${e(eff)}</p>` : "")
-    + (rec.victim ? `<p class="ausg-badtext">Getroffen: ${e(rec.victim)}</p>` : "") + `</div>`;
+    + (rec.victim ? `<p class="ausg-badtext">Unter den Arbeitern: ${e(rec.victim)}</p>` : "") + `</div>`;
   await ChatMessage.create({ content: gmContent, whisper: ChatMessage.getWhisperRecipients("GM").map(u => u.id), flags });
   if (def.public) {
     const pub = `<div class="ausg-card ausg-bad">${tb}<header><div><h3>${e(def.title)}</h3><div class="ausg-sub">Auf der Ausgrabung</div></div></header><p>${e(def.public)}</p>`
-      + (eff ? `<p class="ausg-cost">${e(eff)}</p>` : "") + (rec.victim ? `<p class="ausg-badtext">Getroffen: ${e(rec.victim)}</p>` : "") + `</div>`;
+      + (eff ? `<p class="ausg-cost">${e(eff)}</p>` : "") + (rec.victim ? `<p class="ausg-badtext">Unter den Arbeitern: ${e(rec.victim)}</p>` : "") + `</div>`;
     await ChatMessage.create({ content: pub, flags });
   }
 }
@@ -290,8 +291,8 @@ Hooks.once("init", () => {
   reg("ausgrabungBadLuckPerStep", "Abzug je Stufe Pech", "Wird vom Ereigniswurf abgezogen, wenn ein Held mit dem Nachteil Pech die Grabung leitet.", Number, 2);
   reg("ausgrabungNamesLuck", "Name des Vorteils Glück", "Kommagetrennt, falls euer Bogen andere Namen nutzt.", String, "Glück, Luck");
   reg("ausgrabungNamesBadLuck", "Name des Nachteils Pech", "Kommagetrennt.", String, "Pech, Bad Luck");
-  reg("ausgrabungNamesMagnet", "Name des Nachteils Pechmagnet", "Ein Held damit wird bei Unglücken immer getroffen.", String, "Pechmagnet");
-  reg("ausgrabungNamesLeader", "Name der SF Anführer", "Verhindert, dass Arbeiter mehr Lohn verlangen.", String, "Anführer");
+  reg("ausgrabungNamesMagnet", "Name des Nachteils Pechmagnet", "Leitet ein Held damit einen Abschnitt, fallen Unglücke doppelt so schwer aus (Tote, Ausfälle, Verluste).", String, "Pechmagnet");
+  reg("ausgrabungNamesLeader", "Name der SF Anführer", "Leitet oder arbeitet ein Held damit mit, laufen bei Unruhe keine Arbeiter davon.", String, "Anführer");
   reg("ausgrabungNamesSense", "Spürsinn (Vorteile/SF)", "Leitet ein Held damit, erkennt er immer die Spuren zu Schlüsselfunden. Namensanfänge, kommagetrennt.", String, "Herausragender Sinn, Aufmerksamkeit, Analytiker");
 });
 

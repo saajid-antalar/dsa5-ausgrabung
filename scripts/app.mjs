@@ -178,7 +178,7 @@ function buildClass() {
         ctx.resKeys = RES;
         const story = st => {
           const rec = state.story[st.id];
-          const eff = [fx(st.fx), st.days ? `+${st.days} Tage` : "", st.wheel ? `Förderrad ${st.wheel} Tage still` : "", st.victim ? "ein Opfer" : ""].filter(Boolean).join(", ");
+          const eff = [fx(st.fx), st.days ? `+${st.days} ${st.days === 1 ? "Tag" : "Tage"}` : "", st.wheel ? `Förderrad ${st.wheel} Tage still` : "", st.workers === "accident" ? "W3 Arbeiter tot, W6 verletzt" : st.workers === "harpy" ? "W6 Arbeiter verschleppt" : ""].filter(Boolean).join(", ");
           return { ...st, eff: st.needsSlaves && !state.offers.serham3 ? "ohne Wirkung (keine Sklaven)" : eff, done: !!rec, doneDay: rec?.day, reverted: rec?.reverted,
             canRevert: rec && !rec.reverted && (Object.keys(rec.fx ?? {}).length || rec.wheel) };
         };

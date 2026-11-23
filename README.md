@@ -38,11 +38,14 @@ Im Reiter Spielleitung auslösbar, mit Chatkarte (SL-Hinweise nur an die Spielle
 
 ## Aus den Heldenbögen gelesen
 
+Die Helden graben nicht selbst, sie leiten die Arbeiter. Unglücke treffen deshalb immer Arbeiter: 200 Arbeiter entsprechen 100 %, jeder Tote senkt den Arbeiterstand dauerhaft um 0,5 %.
+
+
 | Bogeneintrag | Wirkung |
 |---|---|
 | Vorteil **Glück** | +2 je Stufe auf den Ereigniswurf, wenn der Held leitet |
 | Nachteil **Pech** | −2 je Stufe, wenn der Held leitet |
-| Nachteil **Pechmagnet** | trifft bei Unfällen immer diesen Helden |
+| Nachteil **Pechmagnet** | leitet der Held, fallen Unglücke doppelt so schwer aus (Tote, Ausfälle, Verluste) |
 | SF **Anführer** | hält die Arbeiter bei Unruhe auf der Baustelle |
 | **Herausragender Sinn**, **Aufmerksamkeit**, **Analytiker** | als Leitung immer Spuren erkennen (sonst 50 %) |
 | Schicksalspunkte (`system.status.fatePoints.value`) | Neuwurf des Ereignisses |

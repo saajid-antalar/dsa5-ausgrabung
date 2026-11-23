@@ -71,13 +71,13 @@ export const STORY = [
   { id: "wasserloch", who: "Zwischenfall", must: false, title: "Ein Wasserloch trocknet aus", page: 50,
     fx: { wasser: -25 }, public: "Eines der Wasserlöcher ist ausgetrocknet." },
   { id: "unfall", who: "Zwischenfall", must: false, title: "Unfall auf der Baustelle", page: 50,
-    days: 1, victim: true, public: "Ein schwerer Unfall auf der Baustelle." },
+    days: 1, workers: "accident", public: "Ein schwerer Unfall auf der Baustelle." },
   { id: "benischuf", who: "Zwischenfall", must: false, title: "Ärger mit den Beni Schuf", page: 50,
     public: "Einige Beni Schuf bereiten Ärger." },
   { id: "prediger", who: "Zwischenfall", must: false, title: "Hetzprediger aus Keft", page: 50,
     fx: { arbeiter: -10 }, public: "Ein Hetzprediger aus Keft wettert gegen die ungläubigen Ausgräber." },
   { id: "harpyien", who: "Zwischenfall", must: false, title: "Harpyien entführen Arbeiter", page: 50,
-    fx: { arbeiter: -5 }, victim: true, public: "Harpyien stoßen herab und verschleppen Arbeiter." }
+    workers: "harpy", public: "Harpyien stoßen herab und verschleppen Arbeiter." }
 ];
 
 // Erste Funde (S. 49): Vorbelegung der Fundstellen
@@ -329,16 +329,26 @@ function fxText(fx) {
 }
 function applyFx(state, fx) { for (const [k, v] of Object.entries(fx ?? {})) state.run.adj[k] = (state.run.adj[k] ?? 0) + v; }
 
-// Ereignistabelle eines Abschnitts nach Gesamtwurf (W20 + Modifikatoren)
+// Arbeiterverluste: 200 Arbeiter = 100 %, also 0,5 % je Toten (dauerhaft)
+function loseWorkers(state, dead) { const p = Math.ceil(dead * 0.5); if (p) applyFx(state, { arbeiter: -p }); return p; }
+const MAGNET_NOTE = name => `${name} zieht als Pechmagnet das Unglück an: Es fällt doppelt so schwer aus.`;
+
+// Ereignistabelle eines Abschnitts nach Gesamtwurf (W20 + Modifikatoren).
+// Unglücke treffen die Arbeiter, nicht die Helden. Leitet ein Held mit Pechmagnet, verdoppeln sich die Folgen (ctx.m = 2).
 const EVENTS = [
-  { max: 2, kind: "bad", title: "Unfall in der Grube", text: "Eine Grubenwand gibt nach. Ein Tag geht verloren.", victim: "1W6+2 SP", victimRoll: "1d6+2",
-    fx: async (s) => { s.run.day += 1; } },
+  { max: 2, kind: "bad", title: "Einsturz in der Grube", text: "Eine Grubenwand bricht ein und begräbt Arbeiter unter sich.",
+    fx: async (s, ctx, r) => {
+      const dead = (await dice(ctx.holzLack ? "1d6" : "1d3")) * ctx.m, hurt = (await dice("1d6")) * ctx.m;
+      const p = loseWorkers(s, dead); s.run.day += ctx.m;
+      r.victim = `${dead} Arbeiter tot, ${hurt} verletzt (Arbeiter −${p} %, +${ctx.m} ${ctx.m > 1 ? "Tage" : "Tag"} Bergung).`;
+      if (ctx.holzLack) r.extra = "Ohne ausreichende Abstützung war der Einsturz besonders verheerend.";
+    } },
   { max: 4, kind: "bad", title: "Unruhe unter den Arbeitern", text: "Gerüchte über Flüche machen die Runde, einige Arbeiter gehen.", leaderStops: true,
-    fx: async (s, ctx, r) => { applyFx(s, { arbeiter: -5 }); r.extra = "Arbeiter −5 %."; } },
-  { max: 6, kind: "bad", title: "Sandsturm", text: "Der Wind treibt den Sand zurück in die Gruben. Ein zusätzlicher Tag geht verloren.",
-    fx: async (s) => { s.run.day += 1; } },
+    fx: async (s, ctx, r) => { const v = 5 * ctx.m; applyFx(s, { arbeiter: -v }); r.victim = `${v * 2} Arbeiter verlassen die Grabung (Arbeiter −${v} %).`; } },
+  { max: 6, kind: "bad", title: "Sandsturm", text: "Der Wind treibt den Sand zurück in die Gruben.",
+    fx: async (s, ctx, r) => { s.run.day += ctx.m; r.extra = `${ctx.m > 1 ? `${ctx.m} zusätzliche Tage gehen` : "Ein zusätzlicher Tag geht"} verloren.`; } },
   { max: 8, kind: "bad", title: "Werkzeug bricht", text: "Hacken und Schaufeln halten dem harten Boden nicht stand.",
-    fx: async (s, ctx, r) => { applyFx(s, { werkzeug: -10 }); r.extra = "Werkzeug −10 %."; } },
+    fx: async (s, ctx, r) => { const v = 10 * ctx.m; applyFx(s, { werkzeug: -v }); r.extra = `Werkzeug −${v} %.`; } },
   { max: 12, kind: "neu", title: "Schichten dokumentiert", text: "Tiefe und Bodenschichten werden vermessen und aufgezeichnet, sonst nichts Auffälliges." },
   { max: 14, kind: "good", title: "Alte Balken", text: "Eine verschüttete Stützkonstruktion liefert brauchbares Holz.",
     fx: async (s, ctx, r) => { applyFx(s, { holz: 5 }); r.extra = "Holz +5 %."; } },
@@ -355,25 +365,21 @@ const EVENTS = [
 
 async function resolveEvent(state, last, profiles) {
   const ev = EVENTS.find(e => last.tot <= e.max);
-  const r = { kind: ev.kind, title: ev.title, text: ev.text, extra: "", victim: "", find: null };
+  const r = { kind: ev.kind, title: ev.title, text: ev.text, extra: "", victim: "", find: null, magnet: "" };
   const present = profiles.filter(p => p.present);
-  const ctx = { idx: last.idx };
+  const lead = profiles.find(p => p.id === last.leaderId);
+  const magnet = ev.kind === "bad" && !!lead?.magnet;
+  const ctx = { idx: last.idx, m: magnet ? 2 : 1, holzLack: (last.cost?.lacks ?? []).some(l => l.key === "holz") };
   if (ev.leaderStops && present.some(p => p.leader)) {
     const a = present.find(p => p.leader);
     r.kind = "neu";
     r.extra = `${a.name} hält die Arbeiter als Anführer bei der Stange. Niemand geht.`;
-  } else if (ev.fx) await ev.fx(state, ctx, r);
-  if (ev.victim) r.victim = await pickVictim(present, ev.victim, ev.victimRoll);
+  } else {
+    if (ev.fx) await ev.fx(state, ctx, r);
+    if (magnet) r.magnet = MAGNET_NOTE(lead.name);
+  }
   if (r.find) state.finds.push({ cell: cellName(last.idx), text: r.find });
   return r;
-}
-
-async function pickVictim(present, text, roll) {
-  const mag = present.find(p => p.magnet);
-  const v = mag ?? present[Math.floor(Math.random() * present.length)];
-  let txt = text;
-  if (roll) txt += `: ${await dice(roll)} SP`;
-  return v ? `${v.name}${mag ? " (Pechmagnet)" : ""}: ${txt}` : txt;
 }
 
 function checkInsight(state) {
@@ -475,15 +481,22 @@ export async function gmReroll(scene, { digId, actorId, d20 }) {
 export async function triggerStory(state, id) {
   const def = STORY.find(s => s.id === id);
   if (!def || state.story[id]) return null;
-  const present = partyProfiles(state).filter(p => p.present);
   const rec = { day: state.run.day, fx: clone(def.fx ?? {}), days: def.days ?? 0, wheel: 0, victim: "" };
   if (def.needsSlaves && !state.offers?.serham3) rec.fx = {};
   applyFx(state, rec.fx);
   if (rec.days) state.run.day += rec.days;
   if (def.wheel) { rec.wheel = def.wheel; state.run.wheelUntil = Math.max(state.run.wheelUntil, state.run.day + def.wheel); }
-  if (def.victim) rec.victim = await pickVictim(present, "verletzt", "1d6+2");
+  if (def.workers === "accident") {
+    const dead = await dice("1d3"), hurt = await dice("1d6");
+    const p = Math.ceil(dead * 0.5); rec.fx.arbeiter = (rec.fx.arbeiter ?? 0) - p; applyFx(state, { arbeiter: -p });
+    rec.victim = `${dead} Arbeiter tot, ${hurt} verletzt`;
+  } else if (def.workers === "harpy") {
+    const n = await dice("1d6");
+    const p = Math.ceil(n * 0.5); rec.fx.arbeiter = (rec.fx.arbeiter ?? 0) - p; applyFx(state, { arbeiter: -p });
+    rec.victim = `${n} Arbeiter verschleppt`;
+  }
   state.story[id] = rec;
-  const eff = [fxText(rec.fx), rec.days ? `+${rec.days} Tage` : "", rec.wheel ? `Förderrad ${rec.wheel} Tage außer Betrieb` : ""].filter(Boolean).join(", ");
+  const eff = [fxText(rec.fx), rec.days ? `+${rec.days} ${rec.days === 1 ? "Tag" : "Tage"}` : "", rec.wheel ? `Förderrad ${rec.wheel} Tage außer Betrieb` : ""].filter(Boolean).join(", ");
   pushLog(state, `${def.title}${def.public ? "" : " (nur SL)"}${eff ? ` · ${eff}` : ""}`, !def.public);
   return { def, rec, eff };
 }
