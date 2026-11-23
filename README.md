@@ -63,3 +63,5 @@ Grabungen aus Version 1.0 werden beim Laden der Welt durch die Spielleitung auto
 ## Release
 
 Version in `module.json` (auch in der `download`-URL) erhöhen, committen und ein Tag `v<Version>` anlegen. Der Workflow prüft Version und Download-URL, baut das Archiv und legt das Release an.
+
+Alle Grafiken (Szene und Kacheln) sind für dieses Modul prozedural im Federzeichnungs-Stil erzeugt; die Skripte liegen unter `tools/`.
