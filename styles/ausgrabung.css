@@ -178,6 +178,7 @@
 .dsa-ausgrabung .ausg-hud-sec > summary { cursor: pointer; font-family: "Modesto Condensed", Georgia, serif; font-size: 1.15em; }
 .dsa-ausgrabung .ausg-hud .ausg-bar { grid-template-columns: 64px 1fr 40px; font-size: .85em; }
 .dsa-ausgrabung .ausg-hud h3 { margin: 0 0 6px; }
+.dsa-ausgrabung .ausg-hud-day { margin: 8px 0 2px; }
 .dsa-ausgrabung .ausg-hud-sel { font-size: 1.1em; margin: 8px 0 4px; }
 .dsa-ausgrabung .ausg-hud .ausg-card { font-size: .9em; }
 .dsa-ausgrabung .ausg-lead.inline { flex-direction: row; align-items: center; gap: 6px; margin: 0; }

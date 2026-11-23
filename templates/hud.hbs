@@ -11,11 +11,7 @@
           <div class="ausg-bar {{lvl}}"><span class="l">{{label}}</span><span class="track"><span class="fill" style="width:{{v}}%"></span></span><span class="v">{{v}} %</span></div>
         {{/each}}
       </div>
-      <div class="ausg-days">
-        <span>Tag <b>{{day}}</b></span>
-        <span class="track"><span class="fill" style="width:{{dayPct}}%"></span></span>
-        <span>≈ {{bt}}</span>
-      </div>
+      <p class="ausg-hud-day">Grabungstag <b>{{day}}</b></p>
       <p class="ausg-muted">Ausgaben: {{spent}} D</p>
       {{#each warn}}<p class="ausg-warn">{{this}}</p>{{/each}}
       {{#if insight}}<p class="ausg-goodtext">Erkenntnis: Es wird tiefer und entlang des Flussbetts gegraben.</p>{{/if}}

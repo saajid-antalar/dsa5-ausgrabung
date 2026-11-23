@@ -35,13 +35,12 @@ function buildHud() {
       const res = resources(state);
       const lead = state.leader && state.leaderFor === -1 ? partyProfiles(state).find(p => p.id === state.leader && p.present) : null;
       const sm = supplyMod(res);
-      const bt = Number(state.settings.breakthrough) || 120;
       return {
         onScene: canvas?.scene?.id === scene.id,
         picking: isPicking(),
         testActive: !!state.test?.active,
         res: RES.map(r => ({ ...r, v: res[r.key], lvl: level(res[r.key]) })),
-        day: state.run.day, bt, dayPct: Math.min(100, Math.round(state.run.day / bt * 100)),
+        day: state.run.day,
         spent: Math.round((state.run.spent + offerCost(state)) * 10) / 10,
         warn: [sm ? `Wasser und Nahrung knapp: −${Math.abs(sm)} auf jeden Wurf.` : "",
                wheelBroken(state) ? `Förderrad steht noch ${state.run.wheelUntil - state.run.day} Tage still.` : ""].filter(Boolean),
