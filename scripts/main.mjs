@@ -223,6 +223,7 @@ Hooks.once("ready", async () => {
         await syncTiles(sc, m);
         ui.notifications.info(`Ausgrabung: „${sc.name}“ auf das Ressourcenmodell des Abenteuers umgestellt.`);
       }
+      else if (st) await syncTiles(sc, st);   // rückt verschobene Kacheln zurecht
     }
   }
 });

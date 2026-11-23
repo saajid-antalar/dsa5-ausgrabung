@@ -42,7 +42,8 @@ export async function createDigScene() {
 
 function tileData(key, src, x, y, w, h, sort) {
   return {
-    texture: { src }, x, y, width: w, height: h, sort, elevation: 0,
+    // Ab V14 bezieht sich x/y auf einen Anker (Standard: Mitte). 0/0 = linke obere Ecke wie in V13.
+    texture: { src }, x, y, width: w, height: h, anchorX: 0, anchorY: 0, sort, elevation: 0,
     locked: true, hidden: false, alpha: 1,
     flags: { [ID]: { k: key } }
   };
@@ -85,7 +86,19 @@ export async function syncTiles(scene, state = getState(scene)) {
   const have = new Set(existing.map(t => t.getFlag(ID, "k")));
   const del = existing.filter(t => !want.has(t.getFlag(ID, "k"))).map(t => t.id);
   const add = [...want.entries()].filter(([k]) => !have.has(k)).map(([, d]) => d);
+  // vorhandene Kacheln an die richtige Stelle rücken (z. B. aus 1.0 mit mittigem Anker)
+  const fix = [];
+  for (const t of existing) {
+    const d = want.get(t.getFlag(ID, "k"));
+    if (!d) continue;
+    const u = { _id: t.id };
+    for (const f of ["x", "y", "width", "height", "anchorX", "anchorY"]) {
+      if (f in t._source && t._source[f] !== d[f]) u[f] = d[f];
+    }
+    if (Object.keys(u).length > 1) fix.push(u);
+  }
   if (del.length) await scene.deleteEmbeddedDocuments("Tile", del);
+  if (fix.length) await scene.updateEmbeddedDocuments("Tile", fix);
   if (add.length) await scene.createEmbeddedDocuments("Tile", add);
 }
 
