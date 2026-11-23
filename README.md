@@ -1,6 +1,6 @@
 # DSA5 – Die Ausgrabung
 
-Foundry VTT V14 / DSA5 8.1.x. Grabungsspiel für den Abschnitt der Drachenchronik I, in dem die Helden selbst graben.
+Foundry VTT V14 / DSA5 8.1.x. Grabungsspiel für die Ausgrabung in der Drachenchronik I, aufgebaut auf den Regeln des Bandes (S. 34–36 Ressourcen, S. 47–50 Verlauf der Ausgrabung).
 
 ## Installation
 
@@ -12,33 +12,39 @@ https://raw.githubusercontent.com/saajid-antalar/dsa5-ausgrabung/main/module.jso
 
 Danach das Modul in der Welt aktivieren. Über das Kellensymbol in der Token-Leiste oder das Makro **⛏️ Ausgrabung** öffnet sich das Grabungsfenster. Die Spielleitung legt dort einmalig die Szene **Grabungsstätte im Khôm** an (Szenenordner „Drachenchronik“).
 
-## Spiel
+## Versorgung (S. 34–36)
 
-- 10×10-Grabungsplan in einer eigenen Wüstenszene. Unter jedem Feld liegen verdeckt Gelände, Kosten (Tage, Arbeiter, Lohn, Stützbalken) und ein Zufallsereignis. Gegrabene Felder erscheinen als Kacheln auf der Szene, mit Spurenzahl und Ereignismarke.
-- Der Ereigniswurf wird online im Chat gewürfelt (Dice So Nice wird unterstützt). Der SL-Client verrechnet Kosten und Ereignis und postet eine Ergebniskarte. Gegraben wird nur, solange eine Spielleitung verbunden ist.
-- Bei schlechtem Ergebnis kann jeder anwesende Held einen **Schicksalspunkt** für einen Neuwurf einsetzen (Knopf in der Chatkarte, nur für den Besitzer).
+Sechs Ressourcen in Prozent: Wasser, Nahrung, Arbeiter, Holz, Werkzeug, Tiere. Ziel ist jeweils 100 %. Start mit der Unterstützung von Scheich Alim (Wasser 30, Nahrung 30, Arbeiter 40, Holz 5, Werkzeug 0, Tiere 30). Im Reiter **Spielleitung** stehen alle Angebote des Bandes zum Annehmen bereit: die drei Lösungen mit den Beni Schuf (schließen sich aus), Beni Achawi, Ruyad der Schmied, Serham ben Furka (Händler, Lasttiere, Arbeitssklaven) und die große Holz-Karawane. Dazu freie „kleinere Absprachen“. Kosten in Dukaten sind vor dem Annehmen anpassbar, der Tageslohn (1,6 D, also 192 D für vier Monate) läuft mit.
 
-### Aus den Heldenbögen gelesen
+## Grabung
+
+- 10×10-Plan in einer eigenen Wüstenszene mit Förderrad und Lager. Unter jedem Feld liegen verdeckt Gelände und ein Zufallsereignis; gegrabene Felder erscheinen als Kacheln.
+- **Dauer** eines Abschnitts: Grundtage des Geländes, umgerechnet auf den Arbeiterstand (bei 40 % 2,5-mal so lang). Fehlen Holz, Werkzeug oder Tiere für das Gelände: +1 Tag und −2 auf den Ereigniswurf. Wasser und Nahrung unter 75 % geben Abzüge auf jeden Wurf. Steht das Förderrad still, dauert alles länger.
+- **Altes Flussbett:** verborgen im Plan. Die Spurenzahl auf gegrabenen Feldern zählt Flussbett-Felder in der Nachbarschaft. Nach einigen freigelegten Flussbett-Feldern gewinnt die Expedition die Erkenntnis aus dem Band, dass tiefer gegraben werden muss: jeder weitere Abschnitt dauert einen Tag weniger, Flussbett-Abschnitte bekommen +2.
+- **Erste Funde (S. 49)** liegen auf vorbelegten Fundstellen, darunter der Wachturm von Rohuls Orden.
+- **Durchbruch (S. 50):** vom Band fest auf Anfang Tsa gesetzt (Standard Tag 120). Die Spielleitung löst ihn aus, das Portal erscheint auf der Szene. Gutes Spiel verkürzt die Grabung nicht, es spart Ressourcen und Unglück.
+
+## Ereignisse (S. 48–50)
+
+Im Reiter Spielleitung auslösbar, mit Chatkarte (SL-Hinweise nur an die Spielleitung): Pargonus' Werkzeugdiebstahl, Spion im Kartenzelt und Ausgräber auf eigener Spur (laut Band zuerst); Rohuls Aufruhr bei den Arbeitern, Sabotage am Förderrad und Feuer im Werkzeugzelt; die optionalen Zwischenfälle. Die Wirkungen auf die Ressourcen sind Vorschläge, der Band nennt keine Zahlen. Sie lassen sich aufheben, etwa wenn das gestohlene Werkzeug gefunden wird.
+
+## Aus den Heldenbögen gelesen
 
 | Bogeneintrag | Wirkung |
 |---|---|
 | Vorteil **Glück** | +2 je Stufe auf den Ereigniswurf, wenn der Held leitet |
 | Nachteil **Pech** | −2 je Stufe, wenn der Held leitet |
-| Nachteil **Pechmagnet** | trifft bei Einsturz und Skorpionen immer diesen Helden |
-| SF **Anführer** | kein Mehrlohn bei „Murren der Arbeiter“ |
+| Nachteil **Pechmagnet** | trifft bei Unfällen immer diesen Helden |
+| SF **Anführer** | hält die Arbeiter bei Unruhe auf der Baustelle |
 | **Herausragender Sinn**, **Aufmerksamkeit**, **Analytiker** | als Leitung immer Spuren erkennen (sonst 50 %) |
 | Schicksalspunkte (`system.status.fatePoints.value`) | Neuwurf des Ereignisses |
 
-Namen und Bonushöhe sind in den Moduleinstellungen änderbar.
+Gewürfelt wird online im Chat (Dice So Nice wird unterstützt); der SL-Client verrechnet und postet eine Ergebniskarte. Gegraben wird nur, solange eine Spielleitung verbunden ist.
 
-### Spielleitung
+**Testmodus:** festlegbarer W20, Schicksalspunkte nur vorgemerkt, *Zurücksetzen* stellt den Stand vom Teststart wieder her (auch Beschaffung und Ereignisse) und löscht die Testnachrichten.
 
-Im Reiter **Spielleitung**: Kasse, Lohn, Balkenpreis, Arbeiter, Geländetabelle, Schlüsselfunde (Texte aus dem Abenteuer eintragen), Heldengruppe und ein Pinsel für Grabungsbereich, gesperrte Felder, Schlüsselfunde und Gelände.
-
-**Testmodus:** festlegbarer W20, Schicksalspunkte werden nur vorgemerkt (Bögen bleiben unverändert), *Zurücksetzen* stellt den Stand vom Teststart wieder her und löscht die Testnachrichten.
-
-Kosten und Ereignisse sind Vorschläge, nicht die Werte des Abenteuerbandes. Alle Grafiken sind für dieses Modul prozedural erzeugt.
+Grabungen aus Version 1.0 werden beim Laden der Welt durch die Spielleitung automatisch umgestellt; der Grabungsbereich bleibt erhalten.
 
 ## Release
 
-Version in `module.json` (auch in der `download`-URL) erhöhen, committen und ein Tag `v<Version>` pushen. Der Workflow prüft Version und Download-URL, baut das Archiv und legt das Release automatisch an. Ein von Hand in GitHub veröffentlichtes Release funktioniert ebenfalls; dann hängt der Workflow das Archiv dort an.
+Version in `module.json` (auch in der `download`-URL) erhöhen, committen und ein Tag `v<Version>` anlegen. Der Workflow prüft Version und Download-URL, baut das Archiv und legt das Release an.

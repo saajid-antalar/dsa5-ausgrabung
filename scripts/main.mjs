@@ -1,6 +1,6 @@
 // Ausgrabung (Drachenchronik I): Einstellungen, Socket, Hooks, Chatkarten, Szenensteuerung.
 // Eigenständiges Modul; passt zum Modul dsa5-drachenchronik (gemeinsamer Szenenordner „Drachenchronik“).
-import { ID, getState, setState, heroProfile, partyProfiles, cellName, gmDig, gmReroll, pushLog, luckLabel } from "./logic.mjs";
+import { ID, getState, setState, heroProfile, partyProfiles, cellName, gmDig, gmReroll, luckLabel, migrate, STATE_VERSION, RES } from "./logic.mjs";
 
 export async function deleteTestMessages() {
   if (!game.user.isGM) return;
@@ -57,14 +57,6 @@ async function handle(action, p) {
     } else if (action === "leader") {
       const s = getState(scene);
       s.leader = p.actorId || null;
-      await setState(scene, s);
-    } else if (action === "buyWood") {
-      const s = getState(scene);
-      const price = Number(s.settings.woodPrice) || 0;
-      if (s.run.silver < price) return;
-      s.run.silver = Math.round((s.run.silver - price) * 10) / 10;
-      s.run.wood += 1;
-      pushLog(s, `Ein Stützbalken wird für ${price} S gekauft.`);
       await setState(scene, s);
     }
   } catch (e) {
@@ -126,13 +118,17 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   let h = `<div class="ausg-card ausg-${last.ev.kind}">`;
   if (last.test) h += `<div class="ausg-testbar">Testmodus${last.forced ? ` · festgelegter W20` : ""} · zählt nicht</div>`;
   h += `<header><span class="ausg-tot">${last.tot}</span><div><h3>Abschnitt ${cellName(last.idx)}</h3><div class="ausg-sub">${e(c.terrain)}</div></div></header>`;
-  h += `<p class="ausg-cost">${c.days} ${c.days === 1 ? "Tag" : "Tage"} · ${c.crew} Arbeiter · ${c.wage} S Lohn · ${last.noWood ? `<b class="ausg-badtext">${c.wood} Balken fehlen</b>` : `${c.wood} Balken`}${c.shortHanded ? " · <i>zu wenig Arbeiter, dauert länger</i>" : ""}</p>`;
+  const lab = Object.fromEntries(RES.map(r => [r.key, r.label]));
+  const lacks = (c.lacks ?? []).map(l => `<b class="ausg-badtext">${lab[l.key]} ${l.have} %/${l.need} %</b>`).join(" · ");
+  h += `<p class="ausg-cost">${c.days} ${c.days === 1 ? "Tag" : "Tage"} · ${c.wage} D Lohn${c.wheel ? " · Förderrad steht still" : ""}${lacks ? " · " + lacks : ""}</p>`;
   h += `<p class="ausg-calc">${calc}</p>`;
   if (last.rerolled) h += `<p class="ausg-calc">↻ ${e(last.rerolled)} hat einen Schicksalspunkt eingesetzt.</p>`;
   h += `<h4 class="ausg-evt">${e(last.ev.title)}</h4><p>${e(last.ev.text)}</p>`;
   if (last.ev.extra) h += `<p>${e(last.ev.extra)}</p>`;
   if (last.ev.victim) h += `<p class="ausg-badtext">Getroffen: ${e(last.ev.victim)}</p>`;
-  if (last.key) h += `<div class="ausg-key">✦ <b>Schlüsselfund:</b> ${e(last.key)}</div>`;
+  if (last.rock) h += `<p><i>${e(last.rock)}</i></p>`;
+  if (last.key) h += `<div class="ausg-key">✦ <b>Erster Fund:</b> ${e(last.key)}</div>`;
+  if (last.insight) h += `<div class="ausg-key">💡 <b>Erkenntnis:</b> ${e(last.insight)}</div>`;
   if (buttons && !last.rerolled && last.ev.kind !== "good") {
     const can = partyProfiles(state).filter(p => p.present && p.schip > 0);
     if (can.length) {
@@ -143,6 +139,34 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   }
   h += `</div>`;
   return h;
+}
+
+/** Karte für ein Ereignis aus dem Band: SL bekommt alles, Spieler (falls öffentlich) nur das Sichtbare. */
+export async function postStoryCard(def, rec, eff, test) {
+  const e = foundry.utils.escapeHTML ?? (s => String(s));
+  const flags = { [ID]: { test: !!test } };
+  const tb = test ? `<div class="ausg-testbar">Testmodus · zählt nicht</div>` : "";
+  const gmContent = `<div class="ausg-card ausg-bad">${tb}<header><div><h3>${e(def.title)}</h3><div class="ausg-sub">${e(def.who)} · Drachenchronik I, S. ${def.page}</div></div></header>`
+    + (def.public ? `<p>${e(def.public)}</p>` : "")
+    + (def.gm ? `<p class="ausg-calc">Nur SL: ${e(def.gm)}</p>` : "")
+    + (eff ? `<p class="ausg-cost">Wirkung: ${e(eff)}</p>` : "")
+    + (rec.victim ? `<p class="ausg-badtext">Getroffen: ${e(rec.victim)}</p>` : "") + `</div>`;
+  await ChatMessage.create({ content: gmContent, whisper: ChatMessage.getWhisperRecipients("GM").map(u => u.id), flags });
+  if (def.public) {
+    const pub = `<div class="ausg-card ausg-bad">${tb}<header><div><h3>${e(def.title)}</h3><div class="ausg-sub">Auf der Ausgrabung</div></div></header><p>${e(def.public)}</p>`
+      + (eff ? `<p class="ausg-cost">${e(eff)}</p>` : "") + (rec.victim ? `<p class="ausg-badtext">Getroffen: ${e(rec.victim)}</p>` : "") + `</div>`;
+    await ChatMessage.create({ content: pub, flags });
+  }
+}
+
+export async function postBreakthroughCard(cell, test) {
+  const tb = test ? `<div class="ausg-testbar">Testmodus · zählt nicht</div>` : "";
+  await ChatMessage.create({
+    flags: { [ID]: { test: !!test } },
+    content: `<div class="ausg-card ausg-good">${tb}<header><span class="ausg-tot">✦</span><div><h3>Der Durchbruch</h3><div class="ausg-sub">Abschnitt ${cell}</div></div></header>`
+      + `<p>Alles sah nach einem Fehlschlag aus. Doch in den ersten Tagen des Tsamondes stoßen die Arbeiter auf eine Gesteinsschicht: eine frühere, offen liegende Bergflanke, die unter Massen von Sand begraben lag.</p>`
+      + `<p>Darin zeichnen sich die groben Formen eines Portals ab, umkränzt von Symbolen und Bildern. Hier liegt offenbar der Eingang zu dem gesuchten Versteck.</p></div>`
+  });
 }
 
 async function postCard(scene, { state, last }) {
@@ -188,7 +212,19 @@ Hooks.once("ready", async () => {
   const mod = game.modules.get(ID);
   const api = { open: openApp, createScene: createDigScene, findScene: findDigScene };
   mod.api = { ...api, ausgrabung: api };
-  if (game.user.isGM) await ensureMacro();
+  if (game.user.isGM) {
+    await ensureMacro();
+    // Grabungen aus Version 1.0 auf das Ressourcenmodell umstellen (Grabungsbereich bleibt erhalten)
+    for (const sc of game.scenes.filter(x => x.getFlag(ID, "state"))) {
+      const st = getState(sc);
+      if (st && st.version !== STATE_VERSION) {
+        const m = migrate(st);
+        await setState(sc, m);
+        await syncTiles(sc, m);
+        ui.notifications.info(`Ausgrabung: „${sc.name}“ auf das Ressourcenmodell des Abenteuers umgestellt.`);
+      }
+    }
+  }
 });
 
 Hooks.on("getSceneControlButtons", controls => {

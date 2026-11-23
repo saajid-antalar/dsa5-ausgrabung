@@ -50,7 +50,6 @@
 .dsa-ausgrabung .ausg-cell.dug { color: #fff; border-color: var(--ausg-ink); font-weight: 700; text-shadow: 0 1px 1px rgba(0,0,0,.6); }
 .dsa-ausgrabung .ausg-cell.sel { outline: 3px solid var(--ausg-lapis); outline-offset: -3px; }
 .dsa-ausgrabung .ausg-cell.key { box-shadow: inset 0 0 0 3px #e7c14a; }
-.dsa-ausgrabung .ausg-cell.gmkey::after { content: "✦"; position: absolute; top: 0; right: 2px; color: var(--ausg-lapis); font-size: 1.4em; }
 .dsa-ausgrabung .ausg-cell .h { position: absolute; top: 0; right: 2px; font-size: 1.35em; }
 .dsa-ausgrabung .ausg-cell .e { position: absolute; bottom: 0; left: 2px; font-size: 1.2em; }
 
@@ -121,3 +120,31 @@
 .ausg-card .ausg-testbar { margin: -8px -10px 6px; padding: 2px 10px; font-size: .8em; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
   background: repeating-linear-gradient(135deg, #f3d77a 0 10px, #ecc95a 10px 20px); color: #3a2a1a; }
 .ausg-testtag { background: #ecc95a; color: #3a2a1a; padding: 0 4px; border-radius: 2px; }
+
+/* Version 1.1: Versorgung, Beschaffung, Ereignisse */
+.dsa-ausgrabung .ausg-src { font-size: .7em; color: var(--ausg-ink-soft); font-family: var(--font-primary, sans-serif); letter-spacing: 0; }
+.dsa-ausgrabung .ausg-bars { display: flex; flex-direction: column; gap: 4px; }
+.dsa-ausgrabung .ausg-bar, .dsa-ausgrabung .ausg-days { display: grid; grid-template-columns: 78px 1fr 46px; gap: 8px; align-items: center; font-size: .9em; }
+.dsa-ausgrabung .ausg-days { grid-template-columns: auto 1fr auto; margin-top: 10px; }
+.dsa-ausgrabung .ausg-bar .v { text-align: right; font-variant-numeric: tabular-nums; }
+.dsa-ausgrabung .track { height: 10px; background: rgba(58,42,26,.15); border: 1px solid rgba(58,42,26,.4); position: relative; overflow: hidden; }
+.dsa-ausgrabung .track .fill { position: absolute; inset: 0 auto 0 0; background: var(--ausg-ink-soft); }
+.dsa-ausgrabung .ausg-bar.ok .fill { background: var(--ausg-verd); }
+.dsa-ausgrabung .ausg-bar.mid .fill { background: #b8942a; }
+.dsa-ausgrabung .ausg-bar.low .fill { background: #c06a2b; }
+.dsa-ausgrabung .ausg-bar.crit .fill { background: var(--ausg-ochre); }
+.dsa-ausgrabung .ausg-bar.crit .v, .dsa-ausgrabung .ausg-bar.low .v { color: var(--ausg-ochre); font-weight: 700; }
+.dsa-ausgrabung .ausg-days .fill { background: var(--ausg-lapis); }
+.dsa-ausgrabung .ausg-warn { color: var(--ausg-ochre); margin: 6px 0 0; }
+.dsa-ausgrabung .ausg-goodtext { color: var(--ausg-lapis); margin: 6px 0 0; }
+.dsa-ausgrabung .ausg-hint { background: rgba(35,64,122,.08); border-left: 3px solid var(--ausg-lapis); padding: 4px 8px; margin: 4px 0 8px; }
+.dsa-ausgrabung .ausg-offers td { vertical-align: top; }
+.dsa-ausgrabung .ausg-offers td.num { white-space: nowrap; }
+.dsa-ausgrabung .ausg-offers tr.taken { background: rgba(47,107,85,.12); }
+.dsa-ausgrabung .ausg-story { list-style: none; margin: 0 0 8px; padding: 0; }
+.dsa-ausgrabung .ausg-story li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dotted rgba(58,42,26,.35); }
+.dsa-ausgrabung .ausg-story li.done b { text-decoration: line-through; text-decoration-color: rgba(58,42,26,.5); }
+.dsa-ausgrabung .ausg-row.tight { margin-top: 0; flex-wrap: nowrap; }
+.dsa-ausgrabung .ausg-cell .m { position: absolute; top: 0; right: 2px; color: var(--ausg-lapis); font-size: 1.4em; font-weight: 700; }
+.dsa-ausgrabung .ausg-log li.gm { color: var(--ausg-ink-soft); font-style: italic; }
+.dsa-ausgrabung h3 { margin-top: 8px; }

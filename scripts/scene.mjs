@@ -1,5 +1,5 @@
 // Szene im Khôm anlegen und die Felder als Kacheln (Tiles) darstellen.
-import { ID, ASSETS, DEFAULT_LAYOUT, newState, getState, setState, getLayout } from "./logic.mjs";
+import { ID, ASSETS, DEFAULT_LAYOUT, newState, getState, setState, getLayout, STATE_VERSION } from "./logic.mjs";
 
 const BG = `${ASSETS}/khom-grabung.webp`;
 const TERRAIN_TEX = { sand: "sand", lehm: "lehm", geroell: "geroell", mauer: "mauer", hohl: "hohl" };
@@ -50,7 +50,7 @@ function tileData(key, src, x, y, w, h, sort) {
 
 /** Bringt die Kacheln der Szene auf den Stand des Spielzustands. */
 export async function syncTiles(scene, state = getState(scene)) {
-  if (!game.user.isGM || !scene || !state) return;
+  if (!game.user.isGM || !scene || !state || state.version !== STATE_VERSION) return;
   const L = getLayout(scene);
   const want = new Map();
   state.cells.forEach((c, i) => {
@@ -61,10 +61,15 @@ export async function syncTiles(scene, state = getState(scene)) {
       return;
     }
     if (!c.dug) return;
-    const tex = TERRAIN_TEX[c.terrain] ?? "sand";
+    // Portal erst nach dem Durchbruch; vorher wie Flussbett
+    const tex = c.kind === "portal" && state.run?.breakthrough ? "portal"
+      : (c.kind === "fluss" || c.kind === "portal") ? "flussbett"
+      : (TERRAIN_TEX[c.terrain] ?? "sand");
     let k = `grube:${i}:${tex}`;
     want.set(k, tileData(k, `${ASSETS}/tiles/${tex}.webp`, x, y, s, s, 2));
-    if (c.key) { k = `fund:${i}`; want.set(k, tileData(k, `${ASSETS}/tiles/schluessel.webp`, x, y, s, s, 3)); }
+    if (c.kind === "fund" || (c.kind === "portal" && state.run?.breakthrough)) {
+      k = `fund:${i}`; want.set(k, tileData(k, `${ASSETS}/tiles/schluessel.webp`, x, y, s, s, 3));
+    }
     if (c.hint !== null && c.hint !== undefined) {
       const h = c.hint === "?" ? "x" : Math.min(8, Number(c.hint));
       const b = Math.round(s * 0.34);
