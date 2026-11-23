@@ -28,7 +28,7 @@ function buildClass() {
       id: "dsa-ausgrabung-app",
       classes: ["dsa-ausgrabung"],
       window: { title: "Die Ausgrabung", icon: "fa-solid fa-trowel", resizable: true },
-      position: { width: 980, height: 820 },
+      position: { width: 1040, height: 860 },
       actions: {
         // nicht "tab" nennen: ApplicationV2 belegt diese Aktion selbst (Tab-Gruppen)
         ausgTab: function (ev, t) { this.tab = t.dataset.ausgTab; this.render(); },

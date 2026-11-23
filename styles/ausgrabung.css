@@ -161,3 +161,15 @@
 .dsa-ausgrabung .ausg-hud-sel { font-size: 1.1em; margin: 8px 0 4px; }
 .dsa-ausgrabung .ausg-hud .ausg-card { font-size: .9em; }
 .dsa-ausgrabung .ausg-lead.inline { flex-direction: row; align-items: center; gap: 6px; margin: 0; }
+
+/* Version 1.2.1: großer Plan im Reiter Spielleitung */
+.dsa-ausgrabung .ausg-grid.ausg-gm { grid-template-columns: 1fr; }
+.dsa-ausgrabung .ausg-gm .ausg-right { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; align-items: start; }
+.dsa-ausgrabung .ausg-gm .ausg-board { grid-template-columns: 36px repeat(10, minmax(52px, 86px)); gap: 4px; justify-content: center; }
+.dsa-ausgrabung .ausg-gm .ausg-lab { font-size: 1.35em; }
+.dsa-ausgrabung .ausg-gm .ausg-cell { font-size: 1em; border-radius: 3px; }
+.dsa-ausgrabung .ausg-gm .ausg-cell .t { padding: 0 2px; }
+.dsa-ausgrabung .ausg-gm .ausg-cell .m { font-size: 1.6em; top: 1px; right: 4px; }
+.dsa-ausgrabung .ausg-gm .ausg-cell .h { font-size: 1.3em; right: 4px; }
+.dsa-ausgrabung .ausg-gm .ausg-cell .e { font-size: 1.2em; left: 4px; }
+.dsa-ausgrabung .ausg-gm .ausg-panel .ausg-row button { font-size: 1.05em; }
