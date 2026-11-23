@@ -199,3 +199,23 @@
 .dsa-ausgrabung .ausg-legend span.sym { background: none; }
 .dsa-ausgrabung .ausg-legend .sw.out { background: repeating-linear-gradient(45deg, transparent 0 4px, rgba(58,42,26,.35) 4px 5px); }
 .dsa-ausgrabung .ausg-legend .sw.dugsw { border: 3px solid var(--ausg-ink); }
+
+/* Version 1.2.4: Anordnung im Reiter Spielleitung */
+.dsa-ausgrabung .ausg-gm .ausg-right { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+.dsa-ausgrabung .ausg-gm .ausg-right > .ausg-panel { margin: 0; }
+.dsa-ausgrabung .ausg-gm .ausg-right > .ausg-panel.wide { grid-column: 1 / -1; }
+.dsa-ausgrabung .ausg-offergrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.dsa-ausgrabung .ausg-offer { border: 1px solid rgba(58,42,26,.35); padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,.25); }
+.dsa-ausgrabung .ausg-offer.taken { background: rgba(47,107,85,.13); border-color: var(--ausg-verd); }
+.dsa-ausgrabung .ausg-offer .hd { display: flex; flex-direction: column; }
+.dsa-ausgrabung .ausg-offer .fx { font-weight: 500; }
+.dsa-ausgrabung .ausg-offer .ft { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 4px; }
+.dsa-ausgrabung .ausg-offer .cost { display: flex; align-items: center; gap: 4px; }
+.dsa-ausgrabung .ausg-offer .cost input { width: 64px; }
+.dsa-ausgrabung .ausg-offer button.active { background: var(--ausg-verd); border-color: var(--ausg-verd); }
+.dsa-ausgrabung .ausg-storycols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.dsa-ausgrabung .ausg-storycols h3 { margin-top: 0; }
+@media (max-width: 900px) {
+  .dsa-ausgrabung .ausg-gm .ausg-right, .dsa-ausgrabung .ausg-offergrid { grid-template-columns: 1fr; }
+  .dsa-ausgrabung .ausg-storycols { grid-template-columns: 1fr; }
+}

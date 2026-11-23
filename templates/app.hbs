@@ -126,22 +126,36 @@
       </div>
 
       <div class="ausg-panel">
+        <h2>Durchbruch <span class="ausg-src">S. 50</span></h2>
+        <p class="ausg-muted">Der Durchbruch ist vom Band fest gesetzt: Anfang Tsa, nach rund vier Monaten. Gutes Spiel verkürzt die Grabung nicht, sondern spart Ressourcen und Unglück.</p>
+        <p>Tag {{day}} von {{bt}} · Flussbett freigelegt: {{riverDug}} Felder{{#if insight}} · Erkenntnis gewonnen{{/if}}</p>
+        {{#if breakthrough}}<p><b>Der Durchbruch ist erfolgt.</b></p>
+        {{else}}<div class="ausg-row"><button type="button" data-action="breakthrough" class="{{#if btReady}}primary{{/if}}"><i class="fa-solid fa-dungeon"></i> Durchbruch auslösen</button>{{#if btReady}}<span class="ausg-hint">Der Tag ist erreicht.</span>{{/if}}</div>{{/if}}
+      </div>
+
+      <div class="ausg-panel wide">
         <h2>Ressourcen beschaffen <span class="ausg-src">S. 34–36</span></h2>
         <p class="ausg-muted">Ziel ist jeweils 100 %. Angebote derselben Quelle schließen sich aus (z. B. die drei Lösungen mit den Beni Schuf). Kosten vor dem Annehmen anpassbar.</p>
-        <table class="ausg-table ausg-offers">
-          <tbody>
+        <div class="ausg-offergrid">
           {{#each offers}}
-            <tr class="{{#if taken}}taken{{/if}}">
-              <td><b>{{title}}</b><div class="ausg-muted">{{source}}{{#if note}} · {{note}}{{/if}}</div><div>{{fx}}</div></td>
-              <td class="num"><input type="number" data-offer-cost="{{id}}" value="{{cost}}" {{#if taken}}disabled{{/if}}> D</td>
-              <td><button type="button" data-action="offer" data-offer="{{id}}">{{#if taken}}Zurücknehmen{{else}}Annehmen{{/if}}</button></td>
-            </tr>
+            <div class="ausg-offer {{#if taken}}taken{{/if}}">
+              <div class="hd"><b>{{title}}</b><span class="ausg-src">{{source}}</span></div>
+              <div class="fx">{{fx}}</div>
+              {{#if note}}<div class="ausg-muted">{{note}}</div>{{/if}}
+              <div class="ft">
+                <label class="cost"><input type="number" data-offer-cost="{{id}}" value="{{cost}}" {{#if taken}}disabled{{/if}}> D</label>
+                <button type="button" data-action="offer" data-offer="{{id}}" class="{{#if taken}}active{{/if}}">{{#if taken}}Angenommen · zurücknehmen{{else}}Annehmen{{/if}}</button>
+              </div>
+            </div>
           {{/each}}
           {{#each custom}}
-            <tr class="taken"><td><b>{{title}}</b><div>{{fx}}</div></td><td class="num">{{cost}} D</td><td><button type="button" data-action="customDel" data-k="{{k}}">Entfernen</button></td></tr>
+            <div class="ausg-offer taken">
+              <div class="hd"><b>{{title}}</b><span class="ausg-src">Kleinere Absprache</span></div>
+              <div class="fx">{{fx}}</div>
+              <div class="ft"><span>{{cost}} D</span><button type="button" data-action="customDel" data-k="{{k}}">Entfernen</button></div>
+            </div>
           {{/each}}
-          </tbody>
-        </table>
+        </div>
         <h3>Kleinere Absprache</h3>
         <div class="ausg-fields">
           <label>Was<input type="text" data-custom="title" placeholder="z. B. Datteln vom Chorbash"></label>
@@ -151,10 +165,11 @@
         <div class="ausg-row"><button type="button" data-action="customAdd"><i class="fa-solid fa-plus"></i> Absprache eintragen</button></div>
       </div>
 
-      <div class="ausg-panel">
+      <div class="ausg-panel wide">
         <h2>Ereignisse der Ausgrabung <span class="ausg-src">S. 48–50</span></h2>
         <p class="ausg-hint">{{storyHint}}</p>
-        <h3>Pargonus (Pflicht, möglichst früh)</h3>
+        <div class="ausg-storycols">
+        <div><h3>Pargonus (Pflicht, möglichst früh)</h3>
         <ul class="ausg-story">
           {{#each storyPargonus}}
             <li class="{{#if done}}done{{/if}}">
@@ -167,7 +182,7 @@
             </li>
           {{/each}}
         </ul>
-        <h3>Rohul al'Acha (Aufruhr und Störungen)</h3>
+        </div><div><h3>Rohul al'Acha (Aufruhr und Störungen)</h3>
         <ul class="ausg-story">
           {{#each storyRohul}}
             <li class="{{#if done}}done{{/if}}">
@@ -180,7 +195,7 @@
             </li>
           {{/each}}
         </ul>
-        <h3>Optionale Zwischenfälle</h3>
+        </div><div><h3>Optionale Zwischenfälle</h3>
         <ul class="ausg-story">
           {{#each storyOptional}}
             <li class="{{#if done}}done{{/if}}">
@@ -193,15 +208,9 @@
             </li>
           {{/each}}
         </ul>
+        </div>
+        </div>
         <p class="ausg-muted">Die Wirkungen sind Vorschläge, der Band nennt keine Zahlen. „Aufheben“ macht die Wirkung rückgängig, zum Beispiel wenn das gestohlene Werkzeug gefunden wird.</p>
-      </div>
-
-      <div class="ausg-panel">
-        <h2>Durchbruch <span class="ausg-src">S. 50</span></h2>
-        <p class="ausg-muted">Der Durchbruch ist vom Band fest gesetzt: Anfang Tsa, nach rund vier Monaten. Gutes Spiel verkürzt die Grabung nicht, sondern spart Ressourcen und Unglück.</p>
-        <p>Tag {{day}} von {{bt}} · Flussbett freigelegt: {{riverDug}} Felder{{#if insight}} · Erkenntnis gewonnen{{/if}}</p>
-        {{#if breakthrough}}<p><b>Der Durchbruch ist erfolgt.</b></p>
-        {{else}}<div class="ausg-row"><button type="button" data-action="breakthrough" class="{{#if btReady}}primary{{/if}}"><i class="fa-solid fa-dungeon"></i> Durchbruch auslösen</button>{{#if btReady}}<span class="ausg-hint">Der Tag ist erreicht.</span>{{/if}}</div>{{/if}}
       </div>
 
       <div class="ausg-panel">
@@ -216,6 +225,21 @@
       </div>
 
       <div class="ausg-panel">
+        <h2>Verwaltung</h2>
+        <div class="ausg-row">
+          <button type="button" data-action="reset"><i class="fa-solid fa-rotate-left"></i> Grabung neu starten</button>
+          <button type="button" data-action="regen"><i class="fa-solid fa-shuffle"></i> Gelände neu verteilen</button>
+          <button type="button" data-action="sync"><i class="fa-solid fa-border-all"></i> Kacheln neu aufbauen</button>
+          <button type="button" data-action="calibrate"><i class="fa-solid fa-ruler-combined"></i> Kacheln ins Raster rücken</button>
+        </div>
+        <div class="ausg-fields">
+          <label>Kachelversatz waagrecht (px)<input type="number" data-shift="dx" value="{{shift.dx}}"></label>
+          <label>Kachelversatz senkrecht (px)<input type="number" data-shift="dy" value="{{shift.dy}}"></label>
+        </div>
+        <p class="ausg-muted">Wird beim Laden der Szene automatisch gemessen. Liegen die Kacheln trotzdem daneben: positive Werte schieben nach rechts bzw. unten, ein halbes Feld sind 100 px.</p>
+        <p class="ausg-muted">„Neu starten“ setzt Tage, Lohn, Ereignisse und gegrabene Felder zurück. Beschaffung, Gelände und Fundstellen bleiben.</p>
+      </div>
+      <div class="ausg-panel wide">
         <h2>Gelände unter der Oberfläche</h2>
         <table class="ausg-table">
           <thead><tr><th>Gelände</th><th>Kurz</th><th>Anteil</th><th title="bei 100 % Arbeitern">Tage</th><th>Holz %</th><th>Werkz. %</th><th>Tiere %</th><th>Mod.</th></tr></thead>
@@ -254,21 +278,6 @@
         </div>
       </div>
 
-      <div class="ausg-panel">
-        <h2>Verwaltung</h2>
-        <div class="ausg-row">
-          <button type="button" data-action="reset"><i class="fa-solid fa-rotate-left"></i> Grabung neu starten</button>
-          <button type="button" data-action="regen"><i class="fa-solid fa-shuffle"></i> Gelände neu verteilen</button>
-          <button type="button" data-action="sync"><i class="fa-solid fa-border-all"></i> Kacheln neu aufbauen</button>
-          <button type="button" data-action="calibrate"><i class="fa-solid fa-ruler-combined"></i> Kacheln ins Raster rücken</button>
-        </div>
-        <div class="ausg-fields">
-          <label>Kachelversatz waagrecht (px)<input type="number" data-shift="dx" value="{{shift.dx}}"></label>
-          <label>Kachelversatz senkrecht (px)<input type="number" data-shift="dy" value="{{shift.dy}}"></label>
-        </div>
-        <p class="ausg-muted">Wird beim Laden der Szene automatisch gemessen. Liegen die Kacheln trotzdem daneben: positive Werte schieben nach rechts bzw. unten, ein halbes Feld sind 100 px.</p>
-        <p class="ausg-muted">„Neu starten“ setzt Tage, Lohn, Ereignisse und gegrabene Felder zurück. Beschaffung, Gelände und Fundstellen bleiben.</p>
-      </div>
     {{else}}
       <div class="ausg-panel">
         <h2>Helden vor Ort <span class="ausg-src">nur für dich sichtbar</span></h2>
