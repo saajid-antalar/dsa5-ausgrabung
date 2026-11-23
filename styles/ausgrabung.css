@@ -173,3 +173,8 @@
 .dsa-ausgrabung .ausg-gm .ausg-cell .h { font-size: 1.3em; right: 4px; }
 .dsa-ausgrabung .ausg-gm .ausg-cell .e { font-size: 1.2em; left: 4px; }
 .dsa-ausgrabung .ausg-gm .ausg-panel .ausg-row button { font-size: 1.05em; }
+
+/* Version 1.2.3: eine Karte pro Abschnitt */
+.ausg-card .ausg-lead-line { margin: 0 0 4px; font-size: .92em; }
+.ausg-card .ausg-die { display: inline-block; padding: 0 6px; border: 1px solid #6f5a40; border-radius: 3px; background: rgba(255,255,255,.55);
+  font-variant-numeric: tabular-nums; white-space: nowrap; color: #3a2a1a; }

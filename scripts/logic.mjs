@@ -387,7 +387,7 @@ function checkInsight(state) {
 }
 
 // ---------- Aktionen der Spielleitung (laufen nur beim aktiven SL) ----------
-export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId }) {
+export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId, draw }) {
   const state = getState(scene);
   if (!state || state.version !== STATE_VERSION) return;
   const cell = state.cells[i];
@@ -425,6 +425,7 @@ export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId }) {
     tot: d20 + mods.reduce((a, m) => a + m.v, 0),
     cost: { days: cost.days, wage: cost.wage, terrain: cost.t.name, lacks: cost.lacks, wheel: wheelBroken(state) },
     key, rock, rerolled: null, userId, test, forced, insight: null,
+    draw: draw && Number(draw.n) > 0 && Number(draw.r) > 0 ? { n: Number(draw.n), r: Number(draw.r) } : null,
     snap: null
   };
   last.snap = { run: clone(state.run), finds: clone(state.finds) };

@@ -64,21 +64,15 @@ export async function digAt(scene, i) {
     const ok = await confirmDig(cellName(i), preset);
     if (!ok) return;
     const test = !!state.test?.active;
-    let hero = preset;
+    let hero = preset, draw = null;
     if (!hero) {
       const roll = await new Roll(`1d${present.length}`).evaluate();
+      await showDice(roll);
       hero = present[roll.total - 1];
-      const luck = hero.luck > 0 ? ` (Glück, +${hero.luck})` : hero.luck < 0 ? ` (Pech, ${hero.luck})` : "";
-      await roll.toMessage({
-        flags: { [ID]: { test } },
-        speaker: ChatMessage.getSpeaker({ user: game.user }),
-        flavor: `${test ? "<b class=\"ausg-testtag\">TEST</b> " : ""}<b>Grabungsleitung für Abschnitt ${cellName(i)}</b><br>Das Los fällt auf <b>${hero.name}</b>${luck}.`
-      });
+      draw = { n: present.length, r: roll.total };
     }
-    const actor = game.actors.get(hero.id);
-    const d20 = test && Number(state.test.forceD20) > 0 ? 0
-      : await rollEvent(actor, `<b>Ausgrabung ${cellName(i)}</b> · Ereigniswurf`, test);
-    await request("dig", { sceneId: scene.id, idx: i, leaderId: hero.id, d20 });
+    const d20 = test && Number(state.test.forceD20) > 0 ? 0 : await rollEvent();
+    await request("dig", { sceneId: scene.id, idx: i, leaderId: hero.id, d20, draw });
   } finally { digBusy = false; }
 }
 
@@ -172,52 +166,19 @@ async function handleNow(action, p) {
 }
 
 // ---------- Würfeln am Client ----------
-async function rollEvent(actor, flavor, test = false) {
-  const p = heroProfile(actor);
-  const formula = p.luck ? `1d20 ${p.luck > 0 ? "+" : "-"} ${Math.abs(p.luck)}` : "1d20";
-  const roll = await new Roll(formula).evaluate();
-  await roll.toMessage({
-    flags: { [ID]: { test } },
-    speaker: ChatMessage.getSpeaker({ actor }),
-    flavor: `${test ? "<b class=\"ausg-testtag\">TEST</b> " : ""}${flavor}<br>Grabungsleitung: ${actor.name}${p.luck ? ` (${p.luck > 0 ? "Glück" : "Pech"} ${luckLabel(p)})` : ""}`
-  });
-  return roll.dice[0]?.total ?? roll.total;
+/** Würfel sichtbar machen: Dice So Nice, falls aktiv, sonst Würfelklang. Die Ergebnisse stehen auf der Ergebniskarte. */
+async function showDice(roll) {
+  try {
+    if (game.dice3d?.showForRoll) { await game.dice3d.showForRoll(roll, game.user, true); return; }
+    const AH = foundry.audio?.AudioHelper ?? globalThis.AudioHelper;
+    AH?.play({ src: CONFIG.sounds.dice, volume: 0.8, autoplay: true, loop: false }, true);
+  } catch (e) { /* nur Darstellung */ }
 }
 
-export async function clientDig(scene) {
-  const state = getState(scene);
-  const idx = state?.selected;
-  const cell = idx != null ? state.cells[idx] : null;
-  if (!cell?.area || cell.dug) return ui.notifications.warn("Bitte zuerst ein Feld auf der Karte wählen.");
-  const leader = state.leader && state.leaderFor === idx ? game.actors.get(state.leader) : null;
-  if (!leader || (state.absent ?? []).includes(leader.id)) return ui.notifications.warn("Bitte zuerst die Grabungsleitung auslosen.");
-  if (!gmOnline()) return;
-  const test = !!state.test?.active;
-  // Im Testmodus mit festgelegtem W20 wird nicht gewürfelt, der SL-Client setzt den Testwert ein.
-  const d20 = test && Number(state.test.forceD20) > 0 ? 0
-    : await rollEvent(leader, `<b>Ausgrabung ${cellName(idx)}</b> · Ereigniswurf`, test);
-  await request("dig", { sceneId: scene.id, idx, leaderId: leader.id, d20 });
-}
-
-/** Lost unter den anwesenden Helden aus, wer den gewählten Abschnitt leitet (Würfel im Chat). */
-export async function clientDrawLeader(scene) {
-  const state = getState(scene);
-  const idx = state?.selected;
-  if (idx == null) return ui.notifications.warn("Bitte zuerst ein Feld auf der Karte wählen.");
-  if (state.leaderFor === idx && state.leader && !game.user.isGM) return ui.notifications.info("Die Leitung für diesen Abschnitt ist schon ausgelost.");
-  const present = partyProfiles(state).filter(p => p.present).sort((a, b) => a.name.localeCompare(b.name));
-  if (!present.length) return ui.notifications.warn("Keine Helden vor Ort. Die Spielleitung legt fest, wer mitarbeitet.");
-  if (!gmOnline()) return;
-  const roll = await new Roll(`1d${present.length}`).evaluate();
-  const hero = present[roll.total - 1];
-  const test = !!state.test?.active;
-  const luck = hero.luck > 0 ? ` (Glück, +${hero.luck})` : hero.luck < 0 ? ` (Pech, ${hero.luck})` : "";
-  await roll.toMessage({
-    flags: { [ID]: { test } },
-    speaker: ChatMessage.getSpeaker({ user: game.user }),
-    flavor: `${test ? "<b class=\"ausg-testtag\">TEST</b> " : ""}<b>Grabungsleitung für Abschnitt ${cellName(idx)}</b><br>Das Los fällt auf <b>${hero.name}</b>${luck}.`
-  });
-  await request("draw", { sceneId: scene.id, idx, actorId: hero.id });
+async function rollEvent() {
+  const roll = await new Roll("1d20").evaluate();
+  await showDice(roll);
+  return roll.total;
 }
 
 export async function clientReroll(sceneId, digId, actorId) {
@@ -231,8 +192,7 @@ export async function clientReroll(sceneId, digId, actorId) {
   const prof = partyProfiles(state).find(p => p.id === actorId);
   if (!prof || prof.schip < 1) return ui.notifications.warn(`${actor.name} hat keine Schicksalspunkte mehr.`);
   if (!gmOnline()) return;
-  const leader = game.actors.get(last.leaderId) ?? actor;
-  const d20 = await rollEvent(leader, `<b>Ausgrabung ${cellName(last.idx)}</b> · Neuwurf, ${actor.name} setzt einen Schicksalspunkt ein`, !!state.test?.active);
+  const d20 = await rollEvent();
   await request("reroll", { sceneId, digId, actorId, d20 });
 }
 
@@ -241,11 +201,14 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   if (!last) return "";
   const e = foundry.utils.escapeHTML ?? (s => String(s));
   const sign = v => (v > 0 ? "+" : "−") + Math.abs(v);
-  const calc = `W20 ${last.d20} ${last.mods.map(m => `${sign(m.v)} (${e(m.label)})`).join(" ")} = <b>${last.tot}</b>`;
+  const calc = `<span class="ausg-die">W20: ${last.d20}</span> ${last.mods.map(m => `${sign(m.v)} (${e(m.label)})`).join(" ")} = <b>${last.tot}</b>`;
   const c = last.cost;
   let h = `<div class="ausg-card ausg-${last.ev.kind}">`;
   if (last.test) h += `<div class="ausg-testbar">Testmodus${last.forced ? ` · festgelegter W20` : ""} · zählt nicht</div>`;
   h += `<header><span class="ausg-tot">${last.tot}</span><div><h3>Abschnitt ${cellName(last.idx)}</h3><div class="ausg-sub">${e(c.terrain)}</div></div></header>`;
+  const lead = game.actors.get(last.leaderId)?.name ?? "?";
+  const how = last.draw ? `ausgelost <span class="ausg-die">W${last.draw.n}: ${last.draw.r}</span>` : "von der Spielleitung bestimmt";
+  h += `<p class="ausg-lead-line">Leitung: <b>${e(lead)}</b> · ${how}</p>`;
   const lab = Object.fromEntries(RES.map(r => [r.key, r.label]));
   const lacks = (c.lacks ?? []).map(l => `<b class="ausg-badtext">${lab[l.key]} ${l.have} %/${l.need} %</b>`).join(" · ");
   h += `<p class="ausg-cost">${c.days} ${c.days === 1 ? "Tag" : "Tage"} · ${c.wage} D Lohn${c.wheel ? " · Förderrad steht still" : ""}${lacks ? " · " + lacks : ""}</p>`;
