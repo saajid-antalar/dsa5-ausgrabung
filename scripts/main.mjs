@@ -1,6 +1,6 @@
 // Ausgrabung (Drachenchronik I): Einstellungen, Socket, Hooks, Chatkarten, Szenensteuerung.
 // Eigenständiges Modul; passt zum Modul dsa5-drachenchronik (gemeinsamer Szenenordner „Drachenchronik“).
-import { ID, getState, setState, heroProfile, partyProfiles, cellName, gmDig, gmReroll, gmProbeRequest, gmProbeStatus, gmProbeResult, luckLabel, migrate, STATE_VERSION, RES } from "./logic.mjs";
+import { ID, getState, setState, heroProfile, partyProfiles, cellName, gmDig, gmReroll, gmProbeRequest, gmProbeStatus, gmProbeResult, gmProbeRevise, luckLabel, migrate, STATE_VERSION, RES } from "./logic.mjs";
 
 export async function deleteTestMessages() {
   if (!game.user.isGM) return;
@@ -140,6 +140,16 @@ async function handleNow(action, p) {
       if (!user?.isGM) return;
       const res = await gmProbeStatus(scene, p);
       if (res) await updateCard(scene, res.state, res.last);
+    } else if (action === "probeRevise") {
+      const pr = getState(scene)?.last?.ev?.pending?.result;
+      const who = pr?.actorId && game.actors.get(pr.actorId);
+      if (!user?.isGM && !who?.testUserPermission(user, "OWNER")) return;
+      const res = await gmProbeRevise(scene, p);
+      if (res) {
+        await syncTiles(scene, res.state); await updateCard(scene, res.state, res.last);
+        const r = res.last.ev.pending.result;
+        ui.notifications.info(`Ausgrabung: Probe von ${r.name} nach Neuwurf ${r.success ? "gelungen, die Arbeiter bleiben" : "misslungen, die Arbeiter gehen"}.`);
+      }
     } else if (action === "probeResult") {
       if (!user?.isGM) return;
       const res = await gmProbeResult(scene, p);
@@ -249,13 +259,15 @@ function probeUser(actor) {
   return players.find(u => u.character?.id === actor.id) ?? players.find(u => actor.testUserPermission(u, "OWNER")) ?? game.user;
 }
 /** Läuft beim würfelnden Client: öffnet den normalen DSA5-Probendialog und meldet das Ergebnis zurück. */
-async function clientProbe({ actorId, skill, mod }) {
+async function clientProbe({ actorId, skill, mod, sceneId, digId }) {
   const actor = game.actors.get(actorId);
   if (!actor) return { status: "error", reason: "Held nicht gefunden" };
   const item = actor.items.find(i => i.type === "skill" && i.name === skill);
   if (!item) return { status: "error", reason: `${actor.name} hat kein Talent „${skill}“` };
   ui.notifications.info(`Ausgrabung: Die Spielleitung verlangt eine Probe auf ${skill} von ${actor.name}.`);
-  const setup = await actor.setupSkill(item, { modifier: Number(mod) || 0, subtitle: " (Ausgrabung)" }, undefined);
+  // postFunction: DSA5 ruft sie auf, wenn die Probenkarte nachträglich geändert wird (Schicksalspunkt, SL-Korrektur)
+  const postFunction = { functionName: `game.modules.get('${ID}').api.probeRevised`, sceneId, digId, actorId };
+  const setup = await actor.setupSkill(item, { modifier: Number(mod) || 0, subtitle: " (Ausgrabung)", postFunction }, undefined);
   if (!setup) return { status: "cancelled" };
   const res = await actor.basicTest(setup);
   if (!res) return { status: "cancelled" };
@@ -267,10 +279,11 @@ async function runProbe(scene, { digId, actorId, skill, mod }) {
   const u = probeUser(actor);
   let out;
   try {
-    if (u.isSelf) out = await clientProbe({ actorId, skill, mod });
+    const q = { actorId, skill, mod, sceneId: scene.id, digId };
+    if (u.isSelf) out = await clientProbe(q);
     else {
       ui.notifications.info(`Probe auf ${skill} an ${u.name} (${actor.name}) geschickt.`);
-      out = await u.query(PROBE_QUERY, { actorId, skill, mod }, { timeout: 5 * 60 * 1000 });
+      out = await u.query(PROBE_QUERY, q, { timeout: 5 * 60 * 1000 });
     }
   } catch (e) {
     console.warn(`${ID} | Probe`, e);
@@ -282,6 +295,12 @@ async function runProbe(scene, { digId, actorId, skill, mod }) {
   const why = out?.status === "error" ? (out.reason ?? "Fehler") : out?.status === "cancelled" ? "abgebrochen" : "keine Antwort";
   ui.notifications.warn(`Ausgrabung: Probe von ${actor.name}: ${why}.`);
   return handle("probeStatus", { sceneId: scene.id, userId: game.user.id, digId, status: why });
+}
+/** Von DSA5 nach einem Neuwurf der Probenkarte aufgerufen (beim würfelnden Client). */
+async function probeRevised(postFunction, { result } = {}) {
+  if (!postFunction?.sceneId || !result) return;
+  await request("probeRevise", { sceneId: postFunction.sceneId, digId: postFunction.digId,
+    success: (Number(result.successLevel) || 0) > 0, qs: Number(result.qualityStep) || 0 });
 }
 /** Die zuletzt gepostete Karte dieses Abschnitts mit dem aktuellen Stand neu schreiben. */
 async function updateCard(scene, state, last) {
@@ -337,7 +356,7 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   const pend = last.ev.pending;
   if (pend?.result && !pend.result.auto && pend.result.name) {
     const r = pend.result;
-    const txt = r.manual ? "von der Spielleitung entschieden" : `${e(r.skill)}${r.mod ? ` ${sign(r.mod)}` : ""}: ${r.success ? `gelungen, QS ${r.qs}` : "misslungen"}`;
+    const txt = r.manual ? "von der Spielleitung entschieden" : `${e(r.skill)}${r.mod ? ` ${sign(r.mod)}` : ""}: ${r.success ? `gelungen, QS ${r.qs}` : "misslungen"}${r.revised ? " (nach Neuwurf)" : ""}`;
     h += `<p class="ausg-calc">🎲 Probe ${e(r.name)} · ${txt}</p>`;
   }
   if (pend?.open && buttons) {
@@ -359,7 +378,7 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   if (buttons && !last.rerolled && last.ev.kind !== "good") {
     const can = partyProfiles(state).filter(p => p.present && p.schip > 0);
     if (can.length) {
-      h += `<div class="ausg-reroll"><span>Schicksal herausfordern:</span>`;
+      h += `<div class="ausg-reroll"><span>Ereignis neu würfeln (SchiP):</span>`;
       h += can.map(p => `<button type="button" data-ausg-reroll="${p.id}" data-dig="${last.id}" data-scene="${sceneId}">${e(p.name.split(" ")[0])} (SchiP ${p.schip})</button>`).join("");
       h += `</div>`;
     }
@@ -445,7 +464,7 @@ Hooks.once("ready", async () => {
   });
   const mod = game.modules.get(ID);
   const api = { open: openApp, createScene: createDigScene, findScene: findDigScene };
-  mod.api = { ...api, ausgrabung: api };
+  mod.api = { ...api, ausgrabung: api, probeRevised };
   if (game.user.isGM) {
     await ensureMacro();
     // Grabungen aus Version 1.0 auf das Ressourcenmodell umstellen (Grabungsbereich bleibt erhalten)

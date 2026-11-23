@@ -398,6 +398,7 @@ async function settleProbe(state, last, { success, actorId = null, skill = "", q
   const name = actorId ? (game.actors.get(actorId)?.name ?? "?") : null;
   pend.open = false;
   pend.result = { success: !!success, actorId, name, skill, qs: Number(qs) || 0, mod: Number(mod) || 0, manual, auto };
+  const before = { adj: clone(state.run.adj), day: state.run.day };
   if (success) {
     r.kind = "neu";
     r.extra = `${name ?? "Die Leitung"} ${ev.probe.ok}`;
@@ -406,11 +407,36 @@ async function settleProbe(state, last, { success, actorId = null, skill = "", q
     if (ev.fx) await ev.fx(state, pend.ctx, r);
     if (pend.magnetName) r.magnet = MAGNET_NOTE(pend.magnetName);
   }
+  // Wirkung merken, damit ein späterer Neuwurf der Probe (SchiP) sie zurücknehmen kann
+  pend.delta = { day: state.run.day - before.day, adj: Object.fromEntries(Object.keys(state.run.adj).map(k => [k, (state.run.adj[k] ?? 0) - (before.adj[k] ?? 0)]).filter(([, v]) => v)) };
   const cell = state.cells[last.idx];
   if (cell) cell.event = r.kind;
   const how = auto ? "keine Probe" : manual ? "von der SL entschieden" : `${skill}${pend.result.mod ? ` ${pend.result.mod > 0 ? "+" : "−"}${Math.abs(pend.result.mod)}` : ""}${success ? `, QS ${pend.result.qs}` : ""}`;
   pushLog(state, `${cellName(last.idx)} · ${r.title}: ${success ? "gehalten" : "nicht gehalten"}${name ? ` (${name}, ${how})` : ` (${how})`}`);
   return true;
+}
+
+/** Probe wurde nachträglich geändert (Schicksalspunkt, Würfelkorrektur): Wirkung zurücknehmen und neu entscheiden. */
+export async function gmProbeRevise(scene, { digId, success, qs }) {
+  const state = getState(scene);
+  const last = state?.last;
+  const pend = last?.ev?.pending;
+  if (!last || last.id !== digId || !pend || pend.open || !pend.result || pend.result.auto) return null;
+  const prev = pend.result;
+  if (!!success === prev.success) {
+    if ((Number(qs) || 0) === prev.qs) return null;
+    prev.qs = Number(qs) || 0;
+  } else {
+    applyFx(state, Object.fromEntries(Object.entries(pend.delta?.adj ?? {}).map(([k, v]) => [k, -v])));
+    state.run.day -= pend.delta?.day ?? 0;
+    const ev = EVENTS[last.ev.evIdx];
+    Object.assign(last.ev, { kind: ev.kind, extra: "", victim: "", magnet: "" });
+    pend.open = true;
+    await settleProbe(state, last, { success: !!success, actorId: prev.actorId, skill: prev.skill, qs, mod: prev.mod });
+    pend.result.revised = true;
+  }
+  await setState(scene, state);
+  return { state, last };
 }
 
 export async function gmProbeRequest(scene, { digId, actorId, skill, mod }) {
