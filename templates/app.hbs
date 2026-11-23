@@ -36,13 +36,29 @@
     {{#if gmTab}}
       <div class="ausg-panel">
         <h2>Grabungsplan</h2>
+        <div class="ausg-planwrap">
         <div class="ausg-board">
           {{#each board}}
             {{#if lab}}<div class="ausg-lab">{{text}}</div>
-            {{else}}<button type="button" class="ausg-cell {{cls}}" style="{{style}}" data-action="cell" data-idx="{{idx}}" title="{{name}}" {{#if disabled}}disabled{{/if}}>
+            {{else}}<button type="button" class="ausg-cell {{cls}}" style="{{style}}" data-action="cell" data-idx="{{idx}}" title="{{title}}" {{#if disabled}}disabled{{/if}}>
               <span class="t">{{text}}</span>{{#if hint}}<span class="h">{{hint}}</span>{{/if}}{{#if ev}}<span class="e">{{ev}}</span>{{/if}}{{#if mark}}<span class="m">{{mark}}</span>{{/if}}
             </button>{{/if}}
           {{/each}}
+        </div>
+        <aside class="ausg-legend">
+          <h3>Gelände</h3>
+          {{#each legend}}<div class="lg"><span class="sw" style="background:{{color}}"></span>{{name}}</div>{{/each}}
+          <h3>Markierungen</h3>
+          <div class="lg"><span class="sw sym">✦</span>Fundstelle (Erste Funde)</div>
+          <div class="lg"><span class="sw sym">≈</span>altes Flussbett</div>
+          <div class="lg"><span class="sw sym">⌂</span>Portal (Durchbruch)</div>
+          <div class="lg"><span class="sw out"></span>gesperrt (Fels)</div>
+          <h3>Zustand</h3>
+          <div class="lg"><span class="sw" style="background:#c9a86a8c"></span>noch verdeckt (blass)</div>
+          <div class="lg"><span class="sw dugsw" style="background:#c9a86a"></span>gegraben (kräftig, umrandet)</div>
+          <div class="lg"><span class="sw sym">2</span>Spuren zum Flussbett ringsum</div>
+          <div class="lg"><span class="sw sym">◆</span>gutes Ereignis · <span class="sym">✕</span> Unglück</div>
+        </aside>
         </div>
           <div class="ausg-row">
             <span class="ausg-muted">Pinsel:</span>

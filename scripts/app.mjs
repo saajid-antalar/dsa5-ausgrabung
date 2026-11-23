@@ -9,6 +9,7 @@ import { request, resultHTML, deleteTestMessages, postStoryCard, postBreakthroug
 
 const TERRAIN_COLORS = { sand: "#c9a86a", lehm: "#a0703f", geroell: "#7d6a55", mauer: "#5b4a6e", hohl: "#8a3a22" };
 const KIND_LABEL = { fund: "✦", fluss: "≈", portal: "⌂" };
+const KIND_NAME = { fund: "Fundstelle", fluss: "Flussbett", portal: "Portal" };
 
 let AppClass = null;
 export class AusgrabungApp {
@@ -116,19 +117,20 @@ function buildClass() {
         for (let c = 0; c < 10; c++) {
           const i = r * 10 + c, cell = state.cells[i];
           const t = state.terrain.find(x => x.id === cell.terrain) ?? state.terrain[0];
-          const o = { idx: i, name: cellName(i), cls: [], style: "", text: "", hint: "", ev: "" };
+          const o = { idx: i, name: cellName(i), cls: [], style: "", text: "", hint: "", ev: "",
+            title: [cellName(i), cell.area ? t.name : "gesperrt", cell.kind ? KIND_NAME[cell.kind] : "", cell.dug ? "gegraben" : ""].filter(Boolean).join(" · ") };
           if (!cell.area) o.cls.push("out");
           if (cell.dug) {
             o.cls.push("dug");
             const river = cell.kind === "fluss" || cell.kind === "portal";
             o.style = `background:${river ? "#8f7a5a" : (TERRAIN_COLORS[t.id] ?? "#999")}`;
-            o.text = cell.kind === "portal" && state.run.breakthrough ? "Portal" : river ? "Flussbett" : (t.short ?? t.name);
+            o.text = gmTab ? "" : (cell.kind === "portal" && state.run.breakthrough ? "Portal" : river ? "Flussbett" : (t.short ?? t.name));
             o.hint = cell.hint == null ? "" : String(cell.hint);
+            if (gmTab) { o.style = `background:${TERRAIN_COLORS[t.id] ?? "#999"}`; if (cell.kind) o.mark = KIND_LABEL[cell.kind]; }
             o.ev = cell.event === "good" ? "◆" : cell.event === "bad" ? "✕" : "";
             if (cell.kind === "fund" || (cell.kind === "portal" && state.run.breakthrough)) o.cls.push("key");
           } else if (gmTab && cell.area) {
-            o.style = `background:${TERRAIN_COLORS[t.id] ?? "#999"}66`;
-            o.text = t.short ?? t.name;
+            o.style = `background:${TERRAIN_COLORS[t.id] ?? "#999"}8c`;
             if (cell.kind) { o.cls.push("gmkind"); o.mark = KIND_LABEL[cell.kind]; }
           }
           o.cls = o.cls.join(" ");
@@ -166,6 +168,7 @@ function buildClass() {
         const lab = Object.fromEntries(RES.map(r => [r.key, r.label]));
         const fx = o => Object.entries(o ?? {}).filter(([, v]) => v).map(([k, v]) => `${lab[k]} ${v > 0 ? "+" : ""}${v} %`).join(", ");
         ctx.settings = state.settings;
+        ctx.legend = state.terrain.map(t => ({ name: t.name, color: TERRAIN_COLORS[t.id] ?? "#999" }));
         const sh = scene.getFlag(ID, "tileShift") ?? {};
         ctx.shift = { dx: Number(sh.dx) || 0, dy: Number(sh.dy) || 0 };
         ctx.terrain = state.terrain.map((t, i) => ({ ...t, i }));

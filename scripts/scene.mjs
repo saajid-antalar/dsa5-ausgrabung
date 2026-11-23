@@ -40,9 +40,12 @@ export async function createDigScene() {
   return scene;
 }
 
-let SHIFT = { dx: 0, dy: 0 };
+let SHIFT = { dx: 0, dy: 0, cell: 200 };
 function tileData(key, src, x, y, w, h, sort) {
-  x += SHIFT.dx; y += SHIFT.dy;
+  // Der Versatz entsteht durch den Bezugspunkt der Kachel und wächst mit ihrer Größe:
+  // gemessen an einer vollen Feldkachel, für kleinere Marken anteilig.
+  x += SHIFT.dx * (w / SHIFT.cell); y += SHIFT.dy * (h / SHIFT.cell);
+  x = Math.round(x); y = Math.round(y);
   return {
     // Ab V14 bezieht sich x/y auf einen Anker (Standard: Mitte). 0/0 = linke obere Ecke wie in V13.
     texture: { src }, x, y, width: w, height: h, anchorX: 0, anchorY: 0, sort, elevation: 0,
@@ -56,7 +59,7 @@ export async function syncTiles(scene, state = getState(scene)) {
   if (!game.user.isGM || !scene || !state || state.version !== STATE_VERSION) return;
   const L = getLayout(scene);
   const sh = scene.getFlag(ID, "tileShift") ?? {};
-  SHIFT = { dx: Number(sh.dx) || 0, dy: Number(sh.dy) || 0 };
+  SHIFT = { dx: Number(sh.dx) || 0, dy: Number(sh.dy) || 0, cell: L.cell };
   const want = new Map();
   state.cells.forEach((c, i) => {
     const x = L.x + (i % L.n) * L.cell, y = L.y + Math.floor(i / L.n) * L.cell, s = L.cell;

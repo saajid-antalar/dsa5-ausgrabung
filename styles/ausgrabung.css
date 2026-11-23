@@ -178,3 +178,24 @@
 .ausg-card .ausg-lead-line { margin: 0 0 4px; font-size: .92em; }
 .ausg-card .ausg-die { display: inline-block; padding: 0 6px; border: 1px solid #6f5a40; border-radius: 3px; background: rgba(255,255,255,.55);
   font-variant-numeric: tabular-nums; white-space: nowrap; color: #3a2a1a; }
+
+/* Version 1.2.3: kompakter Plan mit Legende */
+.dsa-ausgrabung .ausg-planwrap { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; justify-content: center; }
+.dsa-ausgrabung .ausg-gm .ausg-board { grid-template-columns: 30px repeat(10, 58px); grid-auto-rows: 58px; gap: 4px; justify-content: start; }
+.dsa-ausgrabung .ausg-gm .ausg-board .ausg-lab:nth-child(-n+11) { align-items: flex-end; padding-bottom: 2px; }
+.dsa-ausgrabung .ausg-gm .ausg-cell { width: 58px; height: 58px; min-width: 0; aspect-ratio: auto; flex: none; padding: 0; line-height: 1; }
+.dsa-ausgrabung .ausg-gm .ausg-cell.dug { border: 3px solid var(--ausg-ink); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+.dsa-ausgrabung .ausg-gm .ausg-cell .m { position: static; font-size: 1.9em; color: var(--ausg-lapis); text-shadow: 0 0 3px rgba(255,255,255,.8); }
+.dsa-ausgrabung .ausg-gm .ausg-cell.dug .m { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+.dsa-ausgrabung .ausg-gm .ausg-cell .h { font-size: 1.05em; top: 2px; right: 4px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.dsa-ausgrabung .ausg-gm .ausg-cell .e { font-size: 1em; bottom: 2px; left: 4px; }
+.dsa-ausgrabung .ausg-legend { min-width: 220px; font-size: .95em; }
+.dsa-ausgrabung .ausg-legend h3 { margin: 0 0 6px; font-size: 1.05em; }
+.dsa-ausgrabung .ausg-legend h3:not(:first-child) { margin-top: 12px; }
+.dsa-ausgrabung .ausg-legend .lg { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.dsa-ausgrabung .ausg-legend .sw { width: 26px; height: 26px; flex: none; border: 1px solid var(--ausg-ink-soft); border-radius: 3px;
+  display: inline-flex; align-items: center; justify-content: center; }
+.dsa-ausgrabung .ausg-legend .sw.sym, .dsa-ausgrabung .ausg-legend .sym { color: var(--ausg-lapis); font-weight: 700; font-size: 1.15em; background: var(--ausg-sand-deep); }
+.dsa-ausgrabung .ausg-legend span.sym { background: none; }
+.dsa-ausgrabung .ausg-legend .sw.out { background: repeating-linear-gradient(45deg, transparent 0 4px, rgba(58,42,26,.35) 4px 5px); }
+.dsa-ausgrabung .ausg-legend .sw.dugsw { border: 3px solid var(--ausg-ink); }
