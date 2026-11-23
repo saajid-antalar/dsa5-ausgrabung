@@ -1,0 +1,17 @@
+{
+  "id": "dsa5-ausgrabung",
+  "title": "DSA5 – Die Ausgrabung",
+  "description": "Grabungsspiel für Das Schwarze Auge 5 (Drachenchronik I): Die Gruppe wählt Felder auf einem Grabungsplan in einer Khôm-Szene, Gelände, Kosten und Zufallsereignisse liegen verdeckt darunter. Glück, Pech, Pechmagnet, Anführer, Spürsinn und Schicksalspunkte werden aus den Heldenbögen gelesen, gewürfelt wird online im Chat. Mit Testmodus.",
+  "version": "1.0.0",
+  "authors": [{ "name": "Sven" }],
+  "compatibility": { "minimum": "14", "verified": "14" },
+  "relationships": {
+    "systems": [{ "id": "dsa5", "type": "system", "compatibility": {} }]
+  },
+  "esmodules": ["scripts/main.mjs"],
+  "styles": ["styles/ausgrabung.css"],
+  "socket": true,
+  "url": "https://github.com/saajid-antalar/dsa5-ausgrabung",
+  "manifest": "https://raw.githubusercontent.com/saajid-antalar/dsa5-ausgrabung/main/module.json",
+  "download": "https://github.com/saajid-antalar/dsa5-ausgrabung/releases/download/v1.0.0/dsa5-ausgrabung-1.0.0.zip"
+}
