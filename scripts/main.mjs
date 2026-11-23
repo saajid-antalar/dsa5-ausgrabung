@@ -7,7 +7,7 @@ export async function deleteTestMessages() {
   const ids = game.messages.filter(m => m.getFlag(ID, "test")).map(m => m.id);
   if (ids.length) await ChatMessage.deleteDocuments(ids);
 }
-import { createDigScene, syncTiles, findDigScene, isDigScene } from "./scene.mjs";
+import { createDigScene, syncTiles, findDigScene, isDigScene, calibrateTiles } from "./scene.mjs";
 import { AusgrabungApp } from "./app.mjs";
 import { AusgrabungHud } from "./hud.mjs";
 import { DigOverlay } from "./overlay.mjs";
@@ -388,6 +388,12 @@ Hooks.on("updateActor", () => refreshApp());
 Hooks.on("canvasReady", () => {
   buildOverlay();
   refreshApp();
+  if (game.user.isGM && isDigScene(canvas.scene)) {
+    const sc = canvas.scene;
+    // erst Kacheln anlegen, dann nachmessen, wenn sie gezeichnet sind
+    syncTiles(sc).then(() => new Promise(r => setTimeout(r, 800))).then(() => calibrateTiles(sc))
+      .catch(e => console.warn(`${ID} | Kachelabgleich`, e));
+  }
   // Spieler bekommen auf der Grabungsszene automatisch die Übersicht
   if (!game.user.isGM && isDigScene(canvas.scene)) openHud();
 });

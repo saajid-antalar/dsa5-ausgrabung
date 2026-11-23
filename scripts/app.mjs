@@ -4,7 +4,7 @@ import {
   RES, OFFERS, STORY, resources, supplyMod, wheelBroken, offerCost, toggleOffer, triggerStory, revertStory, triggerBreakthrough,
   STATE_VERSION, pushLog
 } from "./logic.mjs";
-import { findDigScene, createDigScene, syncTiles, cellCenter } from "./scene.mjs";
+import { findDigScene, createDigScene, syncTiles, cellCenter, calibrateTiles } from "./scene.mjs";
 import { request, resultHTML, deleteTestMessages, postStoryCard, postBreakthroughCard, setPicking, isPicking } from "./main.mjs";
 
 const TERRAIN_COLORS = { sand: "#c9a86a", lehm: "#a0703f", geroell: "#7d6a55", mauer: "#5b4a6e", hohl: "#8a3a22" };
@@ -48,6 +48,7 @@ function buildClass() {
         }); },
         reset: function () { this._gmEdit(s => resetRun(s)); },
         sync: async function () { await syncTiles(this.scene); ui.notifications.info("Kacheln der Grabung neu aufgebaut."); },
+        calibrate: async function () { await calibrateTiles(this.scene); this.render(); },
         newGame: function () { this._gmEdit(() => newState(), true); },
         offer: function (ev, t) {
           const id = t.dataset.offer;
@@ -165,6 +166,8 @@ function buildClass() {
         const lab = Object.fromEntries(RES.map(r => [r.key, r.label]));
         const fx = o => Object.entries(o ?? {}).filter(([, v]) => v).map(([k, v]) => `${lab[k]} ${v > 0 ? "+" : ""}${v} %`).join(", ");
         ctx.settings = state.settings;
+        const sh = scene.getFlag(ID, "tileShift") ?? {};
+        ctx.shift = { dx: Number(sh.dx) || 0, dy: Number(sh.dy) || 0 };
         ctx.terrain = state.terrain.map((t, i) => ({ ...t, i }));
         ctx.funde = state.funde.map(k => ({ ...k, name: cellName(k.idx) })).sort((a, b) => a.idx - b.idx);
         ctx.actors = game.actors.filter(a => a.type === "character").map(a => ({ id: a.id, name: a.name, inParty: state.party.includes(a.id) }));
@@ -200,6 +203,12 @@ function buildClass() {
       if (!game.user.isGM) return;
       el.querySelectorAll("[data-setting]").forEach(inp => inp.addEventListener("change", () =>
         this._gmEdit(s => { s.settings[inp.dataset.setting] = Number(inp.value) || 0; })));
+      el.querySelectorAll("[data-shift]").forEach(inp => inp.addEventListener("change", async () => {
+        const scene = this.scene;
+        const sh = { ...(scene.getFlag(ID, "tileShift") ?? { dx: 0, dy: 0 }), [inp.dataset.shift]: Number(inp.value) || 0 };
+        await scene.setFlag(ID, "tileShift", sh);
+        await syncTiles(scene);
+      }));
       el.querySelectorAll("[data-terrain]").forEach(inp => inp.addEventListener("change", () =>
         this._gmEdit(s => {
           const t = s.terrain[Number(inp.dataset.terrain)], f = inp.dataset.field;

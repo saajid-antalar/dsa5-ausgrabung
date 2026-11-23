@@ -40,7 +40,9 @@ export async function createDigScene() {
   return scene;
 }
 
+let SHIFT = { dx: 0, dy: 0 };
 function tileData(key, src, x, y, w, h, sort) {
+  x += SHIFT.dx; y += SHIFT.dy;
   return {
     // Ab V14 bezieht sich x/y auf einen Anker (Standard: Mitte). 0/0 = linke obere Ecke wie in V13.
     texture: { src }, x, y, width: w, height: h, anchorX: 0, anchorY: 0, sort, elevation: 0,
@@ -53,6 +55,8 @@ function tileData(key, src, x, y, w, h, sort) {
 export async function syncTiles(scene, state = getState(scene)) {
   if (!game.user.isGM || !scene || !state || state.version !== STATE_VERSION) return;
   const L = getLayout(scene);
+  const sh = scene.getFlag(ID, "tileShift") ?? {};
+  SHIFT = { dx: Number(sh.dx) || 0, dy: Number(sh.dy) || 0 };
   const want = new Map();
   state.cells.forEach((c, i) => {
     const x = L.x + (i % L.n) * L.cell, y = L.y + Math.floor(i / L.n) * L.cell, s = L.cell;
@@ -123,4 +127,32 @@ export function cellAt(scene, point) {
 export function cellCenter(scene, i) {
   const L = getLayout(scene);
   return { x: L.x + (i % L.n) * L.cell + L.cell / 2, y: L.y + Math.floor(i / L.n) * L.cell + L.cell / 2 };
+}
+
+/**
+ * Misst, wo Foundry eine Feldkachel tatsächlich zeichnet, und gleicht Abweichungen aus.
+ * Hintergrund: Ab V14 beziehen sich x/y einer Kachel auf einen Ursprung/Anker, dessen Lage
+ * nicht dokumentiert ist. Statt zu raten, wird der Versatz am gezeichneten Bild gemessen.
+ */
+export async function calibrateTiles(scene) {
+  if (!game.user.isGM || canvas?.scene?.id !== scene?.id) return;
+  const L = getLayout(scene);
+  const full = scene.tiles.find(t => /^(deckel|fels|grube|fund):/.test(t.getFlag(ID, "k") ?? "") && t.object?.mesh);
+  if (!full) return;
+  const i = Number(full.getFlag(ID, "k").split(":")[1]);
+  let center;
+  try {
+    const r = full.object.mesh.getBounds();
+    center = canvas.stage.worldTransform.applyInverse(new PIXI.Point(r.x + r.width / 2, r.y + r.height / 2));
+  } catch (e) { console.warn(`${ID} | Kachel konnte nicht vermessen werden`, e); return; }
+  const want = { x: L.x + (i % L.n) * L.cell + L.cell / 2, y: L.y + Math.floor(i / L.n) * L.cell + L.cell / 2 };
+  const dx = Math.round(want.x - center.x), dy = Math.round(want.y - center.y);
+  if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return;
+  if (Math.abs(dx) > L.cell || Math.abs(dy) > L.cell) { console.warn(`${ID} | unplausibler Kachelversatz`, dx, dy); return; }
+  const old = scene.getFlag(ID, "tileShift") ?? {};
+  const shift = { dx: (Number(old.dx) || 0) + dx, dy: (Number(old.dy) || 0) + dy };
+  console.log(`${ID} | Kachelversatz gemessen: ${dx}/${dy} px, neu ${shift.dx}/${shift.dy}`);
+  await scene.setFlag(ID, "tileShift", shift);
+  await syncTiles(scene);
+  ui.notifications.info(`Ausgrabung: Kacheln um ${dx}/${dy} px ins Raster gerückt.`);
 }

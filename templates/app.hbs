@@ -244,7 +244,13 @@
           <button type="button" data-action="reset"><i class="fa-solid fa-rotate-left"></i> Grabung neu starten</button>
           <button type="button" data-action="regen"><i class="fa-solid fa-shuffle"></i> Gelände neu verteilen</button>
           <button type="button" data-action="sync"><i class="fa-solid fa-border-all"></i> Kacheln neu aufbauen</button>
+          <button type="button" data-action="calibrate"><i class="fa-solid fa-ruler-combined"></i> Kacheln ins Raster rücken</button>
         </div>
+        <div class="ausg-fields">
+          <label>Kachelversatz waagrecht (px)<input type="number" data-shift="dx" value="{{shift.dx}}"></label>
+          <label>Kachelversatz senkrecht (px)<input type="number" data-shift="dy" value="{{shift.dy}}"></label>
+        </div>
+        <p class="ausg-muted">Wird beim Laden der Szene automatisch gemessen. Liegen die Kacheln trotzdem daneben: positive Werte schieben nach rechts bzw. unten, ein halbes Feld sind 100 px.</p>
         <p class="ausg-muted">„Neu starten“ setzt Tage, Lohn, Ereignisse und gegrabene Felder zurück. Beschaffung, Gelände und Fundstellen bleiben.</p>
       </div>
     {{else}}
