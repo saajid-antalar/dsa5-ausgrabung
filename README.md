@@ -41,4 +41,4 @@ Kosten und Ereignisse sind Vorschläge, nicht die Werte des Abenteuerbandes. All
 
 ## Release
 
-Version in `module.json` (auch in der `download`-URL) erhöhen, committen, dann ein GitHub-Release mit dem Tag `v<Version>` veröffentlichen. Der Workflow baut das Archiv und hängt es an.
+Version in `module.json` (auch in der `download`-URL) erhöhen, committen und ein Tag `v<Version>` pushen. Der Workflow prüft Version und Download-URL, baut das Archiv und legt das Release automatisch an. Ein von Hand in GitHub veröffentlichtes Release funktioniert ebenfalls; dann hängt der Workflow das Archiv dort an.
