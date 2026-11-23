@@ -350,7 +350,8 @@ const EVENTS = [
       r.victim = `${dead} Arbeiter tot, ${hurt} verletzt (Arbeiter −${p} %, +${ctx.m} ${ctx.m > 1 ? "Tage" : "Tag"} Bergung).`;
       if (ctx.holzLack) r.extra = "Ohne ausreichende Abstützung war der Einsturz besonders verheerend.";
     } },
-  { max: 4, kind: "bad", title: "Unruhe unter den Arbeitern", text: "Gerüchte über Flüche machen die Runde, einige Arbeiter gehen.", leaderStops: true,
+  { max: 4, kind: "bad", title: "Unruhe unter den Arbeitern", text: "Gerüchte über Flüche machen die Runde, einige Arbeiter wollen gehen.",
+    probe: { why: "Ein Held kann versuchen, die Arbeiter zu halten.", ok: "hält die Arbeiter bei der Stange. Niemand geht.", fail: "kann die Arbeiter nicht halten." },
     fx: async (s, ctx, r) => { const v = 5 * ctx.m; applyFx(s, { arbeiter: -v }); r.victim = `${v * 2} Arbeiter verlassen die Grabung (Arbeiter −${v} %).`; } },
   { max: 6, kind: "bad", title: "Sandsturm", text: "Der Wind treibt den Sand zurück in die Gruben.",
     fx: async (s, ctx, r) => { s.run.day += ctx.m; r.extra = `${ctx.m > 1 ? `${ctx.m} zusätzliche Tage gehen` : "Ein zusätzlicher Tag geht"} verloren.`; } },
@@ -371,22 +372,72 @@ const EVENTS = [
 ];
 
 async function resolveEvent(state, last, profiles) {
-  const ev = EVENTS.find(e => last.tot <= e.max);
-  const r = { kind: ev.kind, title: ev.title, text: ev.text, extra: "", victim: "", find: null, magnet: "" };
-  const present = profiles.filter(p => p.present);
+  const evIdx = EVENTS.findIndex(e => last.tot <= e.max);
+  const ev = EVENTS[evIdx];
+  const r = { kind: ev.kind, title: ev.title, text: ev.text, extra: "", victim: "", find: null, magnet: "", evIdx };
   const lead = profiles.find(p => p.id === last.leaderId);
   const magnet = ev.kind === "bad" && !!lead?.magnet;
   const ctx = { idx: last.idx, m: magnet ? 2 : 1, holzLack: (last.cost?.lacks ?? []).some(l => l.key === "holz") };
-  if (ev.leaderStops && present.some(p => p.leader)) {
-    const a = present.find(p => p.leader);
-    r.kind = "neu";
-    r.extra = `${a.name} hält die Arbeiter als Anführer bei der Stange. Niemand geht.`;
+  if (ev.probe) {
+    // Ausgang hängt an einer Talentprobe, die die Spielleitung aus der Chatkarte anfordert
+    r.pending = { open: true, ctx, magnetName: magnet ? lead.name : null, requested: null, result: null };
+    r.extra = ev.probe.why;
   } else {
     if (ev.fx) await ev.fx(state, ctx, r);
     if (magnet) r.magnet = MAGNET_NOTE(lead.name);
   }
   if (r.find) state.finds.push({ cell: cellName(last.idx), text: r.find });
   return r;
+}
+
+/** Offene Probe entscheiden. success: true/false; actorId/skill/qs nur zur Anzeige. */
+async function settleProbe(state, last, { success, actorId = null, skill = "", qs = 0, mod = 0, manual = false, auto = false }) {
+  const r = last.ev, pend = r.pending;
+  if (!pend?.open) return false;
+  const ev = EVENTS[r.evIdx];
+  const name = actorId ? (game.actors.get(actorId)?.name ?? "?") : null;
+  pend.open = false;
+  pend.result = { success: !!success, actorId, name, skill, qs: Number(qs) || 0, mod: Number(mod) || 0, manual, auto };
+  if (success) {
+    r.kind = "neu";
+    r.extra = `${name ?? "Die Leitung"} ${ev.probe.ok}`;
+  } else {
+    r.extra = auto ? "Niemand hat versucht, die Arbeiter zu halten." : name ? `${name} ${ev.probe.fail}` : "";
+    if (ev.fx) await ev.fx(state, pend.ctx, r);
+    if (pend.magnetName) r.magnet = MAGNET_NOTE(pend.magnetName);
+  }
+  const cell = state.cells[last.idx];
+  if (cell) cell.event = r.kind;
+  const how = auto ? "keine Probe" : manual ? "von der SL entschieden" : `${skill}${pend.result.mod ? ` ${pend.result.mod > 0 ? "+" : "−"}${Math.abs(pend.result.mod)}` : ""}${success ? `, QS ${pend.result.qs}` : ""}`;
+  pushLog(state, `${cellName(last.idx)} · ${r.title}: ${success ? "gehalten" : "nicht gehalten"}${name ? ` (${name}, ${how})` : ` (${how})`}`);
+  return true;
+}
+
+export async function gmProbeRequest(scene, { digId, actorId, skill, mod }) {
+  const state = getState(scene);
+  const last = state?.last;
+  if (!last || last.id !== digId || !last.ev.pending?.open) return null;
+  last.ev.pending.requested = { actorId, skill, mod: Number(mod) || 0, status: "wartet" };
+  await setState(scene, state);
+  return { state, last };
+}
+
+export async function gmProbeStatus(scene, { digId, status }) {
+  const state = getState(scene);
+  const last = state?.last;
+  if (!last || last.id !== digId || !last.ev.pending?.open || !last.ev.pending.requested) return null;
+  last.ev.pending.requested.status = status;
+  await setState(scene, state);
+  return { state, last };
+}
+
+export async function gmProbeResult(scene, { digId, ...res }) {
+  const state = getState(scene);
+  const last = state?.last;
+  if (!last || last.id !== digId) return null;
+  if (!(await settleProbe(state, last, res))) return null;
+  await setState(scene, state);
+  return { state, last };
 }
 
 function checkInsight(state) {
@@ -412,6 +463,8 @@ export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId, draw
   const profiles = partyProfiles(state);
   const lead = profiles.find(p => p.id === leaderId && p.present) ?? null;
   if (!lead) return;
+  let settled = null;
+  if (state.last?.ev?.pending?.open) { await settleProbe(state, state.last, { success: false, auto: true }); settled = clone(state.last); }
   const cost = costOf(state, i);
   state.run.day += cost.days;
   state.run.spent = Math.round((state.run.spent + cost.wage) * 10) / 10;
@@ -451,7 +504,7 @@ export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId, draw
   state.selected = null; state.leader = null; state.leaderFor = null;
   pushLog(state, `${cellName(i)} (${cost.t.name}, ${cost.days} Tg.) · ${last.ev.title}${key ? " · ✦ " + key.split(".")[0] : ""}`);
   await setState(scene, state);
-  return { state, last, lead };
+  return { state, last, lead, settled };
 }
 
 export async function gmReroll(scene, { digId, actorId, d20 }) {

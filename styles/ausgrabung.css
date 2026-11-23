@@ -110,6 +110,19 @@
 .ausg-card .ausg-reroll button { width: auto; flex: 0 0 auto; line-height: 1.5; padding: 0 8px; font-size: .9em; color: #3a2a1a; background: transparent; border: 1px solid #3a2a1a; }
 .ausg-card .ausg-reroll button:hover { background: #e2d1ab; }
 
+/* Talentprobe bei Unruhe (nur SL) */
+.ausg-card .ausg-probe { margin-top: 8px; padding: 6px 8px; border: 1px dashed #7a5a2a; background: rgba(226, 209, 171, .35); font-size: .9em; }
+.ausg-card .ausg-probe-wait { margin: 0 0 6px; font-style: italic; }
+.ausg-card .ausg-probe-row { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.ausg-card .ausg-probe-row select { flex: 1 1 120px; height: 1.8em; }
+.ausg-card .ausg-probe-row label { display: flex; gap: 4px; align-items: center; white-space: nowrap; }
+.ausg-card .ausg-probe-row input { width: 3.4em; height: 1.8em; text-align: center; }
+.ausg-card .ausg-probe-btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.ausg-card .ausg-probe-btns button { width: auto; flex: 0 0 auto; line-height: 1.5; padding: 0 8px; font-size: .9em; color: #3a2a1a; background: transparent; border: 1px solid #3a2a1a; }
+.ausg-card .ausg-probe-btns button:hover { background: #e2d1ab; }
+.ausg-card .ausg-probe-btns button.ausg-probe-lead { font-weight: bold; background: #efe2c4; }
+.ausg-card .ausg-probe-set { border-top: 1px dotted #7a5a2a; padding-top: 6px; }
+
 /* Testmodus */
 .dsa-ausgrabung .ausg-testbanner {
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 12px;

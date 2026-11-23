@@ -48,6 +48,8 @@ Sechs Ressourcen in Prozent: Wasser, Nahrung, Arbeiter, Holz, Werkzeug, Tiere. Z
 
 Im Reiter Spielleitung auslösbar, mit Chatkarte (SL-Hinweise nur an die Spielleitung): Pargonus' Werkzeugdiebstahl, Spion im Kartenzelt und Ausgräber auf eigener Spur (laut Band zuerst); Rohuls Aufruhr bei den Arbeitern, Sabotage am Förderrad und Feuer im Werkzeugzelt; die optionalen Zwischenfälle. Die Wirkungen auf die Ressourcen sind Vorschläge, der Band nennt keine Zahlen. Sie lassen sich aufheben, etwa wenn das gestohlene Werkzeug gefunden wird.
 
+**Talentprobe bei Unruhe:** Würfelt ein Abschnitt „Unruhe unter den Arbeitern“, bleibt das Ereignis offen. Auf der Chatkarte wählt die Spielleitung Talent und Modifikator und klickt den Helden an. Beim Spieler dieses Helden öffnet sich der normale DSA5-Probendialog, das Ergebnis kommt automatisch zurück: gelungen, und alle bleiben; misslungen, und die Arbeiter gehen (bei Pechmagnet doppelt so viele). Ist kein Spieler des Helden online, würfelt die Spielleitung selbst. „✓ gehalten“ und „✗ Arbeiter gehen“ entscheiden ohne Probe. Wird weitergegraben, solange die Probe offen ist, gehen die Arbeiter. Die vorgeschlagenen Talente stehen in den Moduleinstellungen.
+
 ## Aus den Heldenbögen gelesen
 
 Die Helden graben nicht selbst, sie leiten die Arbeiter. Unglücke treffen deshalb immer Arbeiter: 200 Arbeiter entsprechen 100 %, jeder Tote senkt den Arbeiterstand dauerhaft um 0,5 %.
@@ -58,7 +60,7 @@ Die Helden graben nicht selbst, sie leiten die Arbeiter. Unglücke treffen desha
 | Vorteil **Glück** | +2 je Stufe auf den Ereigniswurf, wenn der Held leitet |
 | Nachteil **Pech** | −2 je Stufe, wenn der Held leitet |
 | Nachteil **Pechmagnet** | leitet der Held, fallen Unglücke doppelt so schwer aus (Tote, Ausfälle, Verluste) |
-| SF **Anführer** | hält die Arbeiter bei Unruhe auf der Baustelle |
+| SF **Anführer** | steht bei Unruhe als Erster (★) auf der Chatkarte für die Talentprobe |
 | **Herausragender Sinn**, **Aufmerksamkeit**, **Analytiker** | als Leitung immer Spuren erkennen (sonst 50 %) |
 | Schicksalspunkte (`system.status.fatePoints.value`) | Neuwurf des Ereignisses |
 
@@ -72,4 +74,4 @@ Grabungen aus Version 1.0 werden beim Laden der Welt durch die Spielleitung auto
 
 Version in `module.json` (auch in der `download`-URL) erhöhen, committen und ein Tag `v<Version>` anlegen. Der Workflow prüft Version und Download-URL, baut das Archiv und legt das Release an.
 
-Alle Grafiken (Szene und Kacheln) sind für dieses Modul prozedural im Federzeichnungs-Stil erzeugt; die Skripte liegen unter `tools/`.
+Alle Grafiken (Szene und Kacheln) sind für dieses Modul prozedural erzeugt; die Skripte liegen unter `tools/`.

@@ -1,6 +1,6 @@
 // Ausgrabung (Drachenchronik I): Einstellungen, Socket, Hooks, Chatkarten, Szenensteuerung.
 // Eigenständiges Modul; passt zum Modul dsa5-drachenchronik (gemeinsamer Szenenordner „Drachenchronik“).
-import { ID, getState, setState, heroProfile, partyProfiles, cellName, gmDig, gmReroll, luckLabel, migrate, STATE_VERSION, RES } from "./logic.mjs";
+import { ID, getState, setState, heroProfile, partyProfiles, cellName, gmDig, gmReroll, gmProbeRequest, gmProbeStatus, gmProbeResult, luckLabel, migrate, STATE_VERSION, RES } from "./logic.mjs";
 
 export async function deleteTestMessages() {
   if (!game.user.isGM) return;
@@ -128,7 +128,22 @@ async function handleNow(action, p) {
       const forced = s.test?.active && Number(s.test.forceD20) > 0;
       const d20 = forced ? 0 : await rollEvent();
       const res = await gmDig(scene, { ...p, leaderId, d20, draw });
+      if (res?.settled) await updateCard(scene, res.state, res.settled);
       if (res) { await syncTiles(scene, res.state); await postCard(scene, res); }
+    } else if (action === "probeRequest") {
+      if (!user?.isGM) return;
+      const res = await gmProbeRequest(scene, p);
+      if (!res) return ui.notifications.warn("Diese Probe ist schon entschieden oder der Abschnitt nicht mehr der letzte.");
+      await updateCard(scene, res.state, res.last);
+      runProbe(scene, p);   // nicht abwarten: der Spieler würfelt in Ruhe, die Warteschlange läuft weiter
+    } else if (action === "probeStatus") {
+      if (!user?.isGM) return;
+      const res = await gmProbeStatus(scene, p);
+      if (res) await updateCard(scene, res.state, res.last);
+    } else if (action === "probeResult") {
+      if (!user?.isGM) return;
+      const res = await gmProbeResult(scene, p);
+      if (res) { await syncTiles(scene, res.state); await updateCard(scene, res.state, res.last); }
     } else if (action === "reroll") {
       const actor = game.actors.get(p.actorId);
       if (!actor?.testUserPermission(user, "OWNER")) return;
@@ -223,6 +238,76 @@ export async function clientReroll(sceneId, digId, actorId) {
   await request("reroll", { sceneId, digId, actorId, d20 });
 }
 
+// ---------- Talentprobe aus der Chatkarte ----------
+const PROBE_QUERY = `${ID}.probe`;
+export function probeTalents() {
+  return String(game.settings.get(ID, "ausgrabungProbeTalents") ?? "").split(",").map(t => t.trim()).filter(Boolean);
+}
+/** Wer würfelt für den Helden? Wie bei DSA5: der Spieler mit dem Helden als Charakter, sonst ein aktiver Besitzer, sonst die SL selbst. */
+function probeUser(actor) {
+  const players = game.users.filter(u => u.active && !u.isGM);
+  return players.find(u => u.character?.id === actor.id) ?? players.find(u => actor.testUserPermission(u, "OWNER")) ?? game.user;
+}
+/** Läuft beim würfelnden Client: öffnet den normalen DSA5-Probendialog und meldet das Ergebnis zurück. */
+async function clientProbe({ actorId, skill, mod }) {
+  const actor = game.actors.get(actorId);
+  if (!actor) return { status: "error", reason: "Held nicht gefunden" };
+  const item = actor.items.find(i => i.type === "skill" && i.name === skill);
+  if (!item) return { status: "error", reason: `${actor.name} hat kein Talent „${skill}“` };
+  ui.notifications.info(`Ausgrabung: Die Spielleitung verlangt eine Probe auf ${skill} von ${actor.name}.`);
+  const setup = await actor.setupSkill(item, { modifier: Number(mod) || 0, subtitle: " (Ausgrabung)" }, undefined);
+  if (!setup) return { status: "cancelled" };
+  const res = await actor.basicTest(setup);
+  if (!res) return { status: "cancelled" };
+  return { status: "ok", successLevel: Number(res.result?.successLevel) || 0, qs: Number(res.result?.qualityStep) || 0 };
+}
+async function runProbe(scene, { digId, actorId, skill, mod }) {
+  const actor = game.actors.get(actorId);
+  if (!actor) return;
+  const u = probeUser(actor);
+  let out;
+  try {
+    if (u.isSelf) out = await clientProbe({ actorId, skill, mod });
+    else {
+      ui.notifications.info(`Probe auf ${skill} an ${u.name} (${actor.name}) geschickt.`);
+      out = await u.query(PROBE_QUERY, { actorId, skill, mod }, { timeout: 5 * 60 * 1000 });
+    }
+  } catch (e) {
+    console.warn(`${ID} | Probe`, e);
+    out = { status: "expired" };
+  }
+  if (out?.status === "ok") {
+    return handle("probeResult", { sceneId: scene.id, userId: game.user.id, digId, actorId, skill, mod, success: out.successLevel > 0, qs: out.qs });
+  }
+  const why = out?.status === "error" ? (out.reason ?? "Fehler") : out?.status === "cancelled" ? "abgebrochen" : "keine Antwort";
+  ui.notifications.warn(`Ausgrabung: Probe von ${actor.name}: ${why}.`);
+  return handle("probeStatus", { sceneId: scene.id, userId: game.user.id, digId, status: why });
+}
+/** Die zuletzt gepostete Karte dieses Abschnitts mit dem aktuellen Stand neu schreiben. */
+async function updateCard(scene, state, last) {
+  const msg = game.messages.contents.filter(m => m.flags?.[ID]?.digId === last.id).at(-1);
+  if (!msg) return;
+  await msg.update({ content: resultHTML(state, last, { buttons: true, sceneId: scene.id }) });
+}
+function probeAction(btn, op) {
+  const box = btn.closest(".ausg-probe");
+  const scene = game.scenes.get(box?.dataset.scene);
+  if (!scene || !game.user.isGM) return;
+  const p = { sceneId: scene.id, digId: box.dataset.dig };
+  if (op === "probeRequest") {
+    p.actorId = btn.dataset.actor;
+    p.skill = box.querySelector("[data-ausg-probe-skill]")?.value;
+    p.mod = Number(box.querySelector("[data-ausg-probe-mod]")?.value) || 0;
+    if (!p.skill) return ui.notifications.warn("Bitte ein Talent wählen.");
+  } else {
+    p.success = btn.dataset.ausgProbeSet === "ok";
+    p.manual = true;
+    const req = box.dataset.actor;
+    if (req) { p.actorId = req; p.skill = box.dataset.skill; p.mod = Number(box.dataset.mod) || 0; }
+  }
+  request(op, p);
+}
+
 // ---------- Chatkarte ----------
 export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) {
   if (!last) return "";
@@ -249,6 +334,28 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   if (last.rock) h += `<p><i>${e(last.rock)}</i></p>`;
   if (last.key) h += `<div class="ausg-key">✦ <b>Erster Fund:</b> ${e(last.key)}</div>`;
   if (last.insight) h += `<div class="ausg-key">💡 <b>Erkenntnis:</b> ${e(last.insight)}</div>`;
+  const pend = last.ev.pending;
+  if (pend?.result && !pend.result.auto && pend.result.name) {
+    const r = pend.result;
+    const txt = r.manual ? "von der Spielleitung entschieden" : `${e(r.skill)}${r.mod ? ` ${sign(r.mod)}` : ""}: ${r.success ? `gelungen, QS ${r.qs}` : "misslungen"}`;
+    h += `<p class="ausg-calc">🎲 Probe ${e(r.name)} · ${txt}</p>`;
+  }
+  if (pend?.open && buttons) {
+    const req = pend.requested;
+    const heroes = partyProfiles(state).filter(p => p.present).sort((a, b) => (b.leader ? 1 : 0) - (a.leader ? 1 : 0));
+    const talents = probeTalents();
+    const sel = req?.skill ?? talents[0] ?? "";
+    const opts = [...new Set([sel, ...talents])].filter(Boolean).map(t => `<option${t === sel ? " selected" : ""}>${e(t)}</option>`).join("");
+    h += `<div class="ausg-probe ausg-gmonly" data-scene="${sceneId}" data-dig="${last.id}"${req ? ` data-actor="${req.actorId}" data-skill="${e(req.skill)}" data-mod="${req.mod}"` : ""}>`;
+    if (req) {
+      const who = game.actors.get(req.actorId)?.name ?? "?";
+      h += `<p class="ausg-probe-wait">Probe auf <b>${e(req.skill)}</b>${req.mod ? ` ${sign(req.mod)}` : ""} bei <b>${e(who)}</b>: ${e(req.status === "wartet" ? "wartet auf den Wurf …" : req.status)}</p>`;
+    }
+    h += `<div class="ausg-probe-row"><span>Probe anfordern:</span><select data-ausg-probe-skill>${opts}</select><label>Mod <input type="number" data-ausg-probe-mod value="${req?.mod ?? 0}" step="1"></label></div>`;
+    h += `<div class="ausg-probe-btns">` + heroes.map(p => `<button type="button" data-ausg-probe="${p.id}" data-actor="${p.id}"${p.leader ? ` class="ausg-probe-lead" title="Anführer"` : ""}>${p.leader ? "★ " : ""}${e(p.name.split(" ")[0])}</button>`).join("") + `</div>`;
+    h += `<div class="ausg-probe-btns ausg-probe-set"><button type="button" data-ausg-probe-set="ok">✓ gehalten</button><button type="button" data-ausg-probe-set="fail">✗ Arbeiter gehen</button></div>`;
+    h += `</div>`;
+  }
   if (buttons && !last.rerolled && last.ev.kind !== "good") {
     const can = partyProfiles(state).filter(p => p.present && p.schip > 0);
     if (can.length) {
@@ -324,7 +431,10 @@ Hooks.once("init", () => {
   reg("ausgrabungNamesLuck", "Name des Vorteils Glück", "Kommagetrennt, falls euer Bogen andere Namen nutzt.", String, "Glück, Luck");
   reg("ausgrabungNamesBadLuck", "Name des Nachteils Pech", "Kommagetrennt.", String, "Pech, Bad Luck");
   reg("ausgrabungNamesMagnet", "Name des Nachteils Pechmagnet", "Leitet ein Held damit einen Abschnitt, fallen Unglücke doppelt so schwer aus (Tote, Ausfälle, Verluste).", String, "Pechmagnet");
-  reg("ausgrabungNamesLeader", "Name der SF Anführer", "Leitet oder arbeitet ein Held damit mit, laufen bei Unruhe keine Arbeiter davon.", String, "Anführer");
+  reg("ausgrabungNamesLeader", "Name der SF Anführer", "Helden damit stehen bei Unruhe als Erste auf der Chatkarte, wenn die Spielleitung eine Probe anfordert (★).", String, "Anführer");
+  reg("ausgrabungProbeTalents", "Talente für die Probe bei Unruhe", "Kommagetrennt, das erste ist vorausgewählt. Die Spielleitung fordert die Probe aus der Chatkarte an; nur wenn sie gelingt, bleiben die Arbeiter.", String, "Bekehren & Überzeugen, Einschüchtern, Überreden, Willenskraft");
+  CONFIG.queries ??= {};
+  CONFIG.queries[PROBE_QUERY] = data => clientProbe(data);
   reg("ausgrabungNamesSense", "Spürsinn (Vorteile/SF)", "Leitet ein Held damit, erkennt er immer die Spuren zu Schlüsselfunden. Namensanfänge, kommagetrennt.", String, "Herausragender Sinn, Aufmerksamkeit, Analytiker");
 });
 
@@ -406,6 +516,9 @@ Hooks.on("canvasTearDown", () => { overlay?.destroy(); overlay = null; });
 Hooks.on("renderChatMessageHTML", (message, html) => {
   const el = html instanceof HTMLElement ? html : html?.[0];
   if (!el) return;
+  if (!game.user.isGM) el.querySelectorAll(".ausg-gmonly").forEach(n => n.remove());
+  el.querySelectorAll("button[data-ausg-probe]").forEach(b => b.addEventListener("click", ev => { ev.preventDefault(); probeAction(b, "probeRequest"); }));
+  el.querySelectorAll("button[data-ausg-probe-set]").forEach(b => b.addEventListener("click", ev => { ev.preventDefault(); probeAction(b, "probeResult"); }));
   el.querySelectorAll("button[data-ausg-reroll]").forEach(b => {
     b.addEventListener("click", ev => {
       ev.preventDefault();
