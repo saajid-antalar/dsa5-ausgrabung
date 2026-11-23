@@ -45,13 +45,59 @@ export function setPicking(on) {
   if (app?.rendered) app.render();
 }
 function pickCell(i) {
-  const scene = canvas.scene;
-  request("select", { sceneId: scene.id, idx: i });
-  if (!game.user.isGM) openHud();
+  digAt(canvas.scene, i);
+}
+
+let digBusy = false;
+/** Klick auf ein Feld der Szene: Rückfrage, Leitung auslosen (oder von der SL festgelegt), Ereigniswurf, aufdecken. */
+export async function digAt(scene, i) {
+  if (digBusy) return;
+  const state = getState(scene);
+  const cell = state?.cells?.[i];
+  if (!cell?.area || cell.dug) return;
+  if (!gmOnline()) return;
+  const present = partyProfiles(state).filter(p => p.present).sort((a, b) => a.name.localeCompare(b.name));
+  if (!present.length) return ui.notifications.warn("Keine Helden vor Ort. Die Spielleitung legt fest, wer mitarbeitet.");
+  const preset = state.leader && (state.leaderFor === -1 || state.leaderFor === i) ? present.find(p => p.id === state.leader) : null;
+  digBusy = true;
+  try {
+    const ok = await confirmDig(cellName(i), preset);
+    if (!ok) return;
+    const test = !!state.test?.active;
+    let hero = preset;
+    if (!hero) {
+      const roll = await new Roll(`1d${present.length}`).evaluate();
+      hero = present[roll.total - 1];
+      const luck = hero.luck > 0 ? ` (Glück, +${hero.luck})` : hero.luck < 0 ? ` (Pech, ${hero.luck})` : "";
+      await roll.toMessage({
+        flags: { [ID]: { test } },
+        speaker: ChatMessage.getSpeaker({ user: game.user }),
+        flavor: `${test ? "<b class=\"ausg-testtag\">TEST</b> " : ""}<b>Grabungsleitung für Abschnitt ${cellName(i)}</b><br>Das Los fällt auf <b>${hero.name}</b>${luck}.`
+      });
+    }
+    const actor = game.actors.get(hero.id);
+    const d20 = test && Number(state.test.forceD20) > 0 ? 0
+      : await rollEvent(actor, `<b>Ausgrabung ${cellName(i)}</b> · Ereigniswurf`, test);
+    await request("dig", { sceneId: scene.id, idx: i, leaderId: hero.id, d20 });
+  } finally { digBusy = false; }
+}
+
+async function confirmDig(name, preset) {
+  const text = preset ? `Leitung: <b>${preset.name}</b> (von der Spielleitung bestimmt).` : "Die Grabungsleitung wird unter den Helden vor Ort ausgelost.";
+  const content = `<p>Abschnitt <b>${name}</b> öffnen?</p><p>${text} Was darunter liegt und wie lange es dauert, zeigt sich erst beim Graben.</p>`;
+  const D = foundry.applications?.api?.DialogV2;
+  if (D?.confirm) {
+    try {
+      return !!(await D.confirm({ window: { title: `Abschnitt ${name} graben` }, content,
+        yes: { label: "Graben", icon: "fa-solid fa-trowel" }, no: { label: "Abbrechen" }, rejectClose: false }));
+    } catch (e) { return false; }
+  }
+  return window.confirm(`Abschnitt ${name} graben?`);
 }
 function buildOverlay() {
   overlay?.destroy(); overlay = null;
   if (!isDigScene(canvas?.scene)) { picking = false; return; }
+  picking = true;   // auf der Grabungsszene sind die Felder sofort klickbar
   try {
     overlay = new DigOverlay(canvas.scene, pickCell);
     overlay.setPicking(picking);
@@ -71,7 +117,12 @@ export async function request(action, payload) {
   game.socket.emit(SOCKET, { action: "ausgrabung", op: action, payload });
 }
 
-async function handle(action, p) {
+let queue = Promise.resolve();
+function handle(action, p) {
+  queue = queue.then(() => handleNow(action, p)).catch(e => console.error(`${ID} | ${action}`, e));
+  return queue;
+}
+async function handleNow(action, p) {
   const scene = game.scenes.get(p.sceneId);
   if (!scene) return;
   const user = game.users.get(p.userId);
@@ -111,7 +162,7 @@ async function handle(action, p) {
       if (!user?.isGM) return;
       const s = getState(scene);
       s.leader = p.actorId || null;
-      s.leaderFor = p.actorId ? s.selected : null;
+      s.leaderFor = p.actorId ? -1 : null;   // gilt für den nächsten gegrabenen Abschnitt
       await setState(scene, s);
     }
   } catch (e) {
@@ -311,7 +362,7 @@ Hooks.on("getSceneControlButtons", controls => {
   const order = Object.keys(tokens.tools).length;
   tokens.tools.ausgrabungFeld = {
     name: "ausgrabungFeld",
-    title: "Grabungsfeld auf der Karte wählen",
+    title: "Grabungsfelder anklickbar (ausschalten, um Tokens auf dem Feld zu bewegen)",
     icon: "fa-solid fa-trowel-bricks",
     order,
     toggle: true,

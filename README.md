@@ -14,11 +14,11 @@ Danach das Modul in der Welt aktivieren. Die Spielleitung öffnet über das Kell
 
 ## Ablauf am Tisch
 
-1. **Feld wählen:** In der Token-Leiste den Schalter *Grabungsfeld auf der Karte wählen* einschalten. Die Felder leuchten beim Überfahren auf, ein Klick wählt den Abschnitt; alle sehen die Auswahl auf der Karte. Ist der Schalter aus, verhalten sich Tokens wie gewohnt.
-2. **Leitung auslosen:** Im Übersichtsfenster *Leitung auslosen* klicken. Unter den anwesenden Helden wird im Chat gewürfelt, wer den Abschnitt leitet; dessen Glück oder Pech zählt für den Ereigniswurf. Pro Abschnitt wird einmal gelost; die Spielleitung kann neu losen oder jemanden festlegen.
-3. **Graben und würfeln:** Der Ereigniswurf läuft im Chat, danach erscheint die Ergebniskarte und das Feld auf der Szene.
+Auf der Grabungsszene sind alle abgesteckten Felder **direkt anklickbar**. Ein Klick auf ein Feld fragt kurz nach („Abschnitt E4 graben?“), lost dann im Chat unter den Helden vor Ort aus, wer den Abschnitt leitet, würfelt den Ereigniswurf mit Glück oder Pech dieses Helden und deckt das Feld auf: Die abgesteckte Kachel verwandelt sich in das, was darunter lag. Die Spielleitung kann die Leitung für den nächsten Abschnitt auch festlegen statt auszulosen.
 
-Spieler sehen ein kleines **Übersichtsfenster** (öffnet sich auf der Grabungsszene von selbst): Versorgung, Tag, gewählter Abschnitt mit Leitung, letztes Ergebnis, Funde und Grabungsbuch. Wer vor Ort mitarbeitet, sieht und ändert nur die Spielleitung.
+Wer Tokens auf dem Grabungsfeld bewegen will, pausiert die Feldwahl über den Schalter in der Token-Leiste oder im Übersichtsfenster.
+
+Spieler sehen ein kleines **Übersichtsfenster** (öffnet sich auf der Grabungsszene von selbst): Versorgung, Tag, Warnungen, letztes Ergebnis, Funde und Grabungsbuch. Die Spielleitung hat ein großes Fenster: im Reiter *Grabung* Versorgung, Leitung, Helden vor Ort (nur für sie sichtbar), Funde und Grabungsbuch; im Reiter *Spielleitung* Plan zum Einrichten, Beschaffung, Ereignisse, Durchbruch und Testmodus.
 
 ## Versorgung (S. 34–36)
 

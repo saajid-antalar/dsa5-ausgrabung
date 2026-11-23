@@ -22,25 +22,20 @@
     </section>
 
     <section class="ausg-hud-sec">
-      <h3>Nächster Abschnitt</h3>
+      <h3>Graben</h3>
       {{#unless onScene}}
         <button type="button" data-action="viewScene"><i class="fa-solid fa-map-location-dot"></i> Zur Grabungsszene</button>
       {{else}}
-        <button type="button" data-action="pick" class="{{#if picking}}active{{/if}}"><i class="fa-solid fa-crosshairs"></i> {{#if picking}}Feldwahl beenden{{else}}Feld auf der Karte wählen{{/if}}</button>
-      {{/unless}}
-      {{#if selName}}
-        <p class="ausg-hud-sel">Abschnitt <b>{{selName}}</b></p>
-        {{#if lead}}
-          <p>Leitung: <b>{{lead.name}}</b>{{#if lead.luck}} <span class="ausg-muted">({{lead.luck}})</span>{{/if}}</p>
+        {{#if picking}}
+          <p class="ausg-hud-sel">Klickt auf der Karte auf ein abgestecktes Feld, um es zu graben.</p>
+          <p class="ausg-muted">Die Leitung wird jeweils ausgelost, ihr Glück oder Pech zählt für den Wurf. Was darunter liegt, zeigt sich erst beim Graben.</p>
+          <button type="button" data-action="pick"><i class="fa-solid fa-pause"></i> Feldwahl pausieren (Tokens bewegen)</button>
         {{else}}
-          <button type="button" data-action="draw"><i class="fa-solid fa-dice"></i> Leitung auslosen</button>
+          <p class="ausg-muted">Die Feldwahl ist pausiert, Tokens lassen sich frei bewegen.</p>
+          <button type="button" data-action="pick" class="primary"><i class="fa-solid fa-trowel"></i> Feldwahl fortsetzen</button>
         {{/if}}
-        <div class="ausg-row">
-          <button type="button" class="primary" data-action="dig" {{#unless canDig}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> Graben und würfeln</button>
-        </div>
-      {{else}}
-        <p class="ausg-muted">Noch kein Feld gewählt. Was darunter liegt und was es kostet, zeigt sich erst beim Graben.</p>
-      {{/if}}
+      {{/unless}}
+      {{#if lead}}<p>Nächste Leitung (von der Spielleitung bestimmt): <b>{{lead.name}}</b>{{#if lead.luck}} <span class="ausg-muted">({{lead.luck}})</span>{{/if}}</p>{{/if}}
       {{#if last}}<div class="ausg-last">{{{last}}}</div>{{/if}}
     </section>
 

@@ -49,9 +49,13 @@ export class DigOverlay {
   _hover(i, on) {
     const c = this.cells[i];
     c.g.clear();
-    if (!on || !this.picking || !c.open) return;
-    const s = getLayout(this.scene).cell;
-    c.g.beginFill(WHITE, 0.12).lineStyle(4, WHITE, 0.9).drawRect(3, 3, s - 6, s - 6).endFill();
+    if (!on || !this.picking || !c.open) { if (this.hoverIdx === i) { this.label.text = ""; this.hoverIdx = null; } return; }
+    const L = getLayout(this.scene), s = L.cell;
+    c.g.beginFill(WHITE, 0.14).lineStyle(5, WHITE, 0.95).drawRect(3, 3, s - 6, s - 6).endFill();
+    this.hoverIdx = i;
+    this.label.text = `${cellName(i)} graben`;
+    const x = L.x + (i % L.n) * s, y = L.y + Math.floor(i / L.n) * s;
+    if (this.label.anchor) this.label.position.set(x + s / 2, y + s / 2 - 16); else this.label.position.set(x + 8, y + s / 2 - 16);
   }
 
   setPicking(on) {
@@ -70,17 +74,7 @@ export class DigOverlay {
       cell.g.clear();
     });
     this.marker.clear();
-    this.label.text = "";
-    const sel = state.selected;
-    if (sel != null && state.cells[sel] && !state.cells[sel].dug) {
-      const x = L.x + (sel % L.n) * L.cell, y = L.y + Math.floor(sel / L.n) * L.cell;
-      this.marker.beginFill(LAPIS, 0.16).lineStyle(8, LAPIS, 0.95).drawRect(x + 4, y + 4, L.cell - 8, L.cell - 8).endFill();
-      this.marker.lineStyle(3, GOLD, 0.9).drawRect(x + 12, y + 12, L.cell - 24, L.cell - 24);
-      const lead = state.leader && state.leaderFor === sel ? game.actors.get(state.leader)?.name?.split(" ")[0] : null;
-      this.label.text = lead ? `${cellName(sel)} · ${lead}` : cellName(sel);
-      if (this.label.anchor) { this.label.position.set(x + L.cell / 2, y + L.cell + 6); }
-      else this.label.position.set(x, y + L.cell + 6);
-    }
+    if (this.hoverIdx != null && !this.cells[this.hoverIdx]?.open) { this.label.text = ""; this.hoverIdx = null; }
   }
 
   destroy() {

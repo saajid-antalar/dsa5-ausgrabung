@@ -397,7 +397,8 @@ export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId }) {
   let d20 = forced ? Number(state.test.forceD20) : Number(rolled);
   if (!(d20 >= 1)) d20 = await dice("1d20");
   const profiles = partyProfiles(state);
-  const lead = profiles.find(p => p.id === leaderId) ?? null;
+  const lead = profiles.find(p => p.id === leaderId && p.present) ?? null;
+  if (!lead) return;
   const cost = costOf(state, i);
   state.run.day += cost.days;
   state.run.spent = Math.round((state.run.spent + cost.wage) * 10) / 10;

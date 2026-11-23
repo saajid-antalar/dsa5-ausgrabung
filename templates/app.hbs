@@ -33,6 +33,7 @@
 
   <div class="ausg-grid ausg-scroll">
     <section class="ausg-left">
+    {{#if gmTab}}
       <div class="ausg-panel">
         <h2>Grabungsplan</h2>
         <div class="ausg-board">
@@ -43,25 +44,48 @@
             </button>{{/if}}
           {{/each}}
         </div>
-        {{#if gmTab}}
           <div class="ausg-row">
             <span class="ausg-muted">Pinsel:</span>
             {{#each paint}}<button type="button" data-action="paint" data-mode="{{mode}}" class="{{#if active}}active{{/if}}">{{label}}</button>{{/each}}
           </div>
           <p class="ausg-muted">Nur du siehst Gelände, Fundstellen (✦), das alte Flussbett (≈) und das Portal (⌂). Die Spurenzahl auf gegrabenen Feldern zählt Flussbett und Portal in den acht Nachbarfeldern.</p>
-        {{else}}
-          <p class="ausg-muted">Zahl oben rechts: Spuren fließenden Wassers in den acht Nachbarfeldern, „?“ = nichts erkannt. ◆ gutes Ereignis, ✕ Unglück.</p>
-        {{/if}}
       </div>
 
-      {{#unless gmTab}}
+    {{else}}
       <div class="ausg-panel">
-        <h2>Grabungsbuch</h2>
-        <ol class="ausg-log">
-          {{#each log}}<li class="{{#if gm}}gm{{/if}}"><span class="d">Tag {{day}}</span> {{text}}</li>{{else}}<li class="ausg-muted">Noch kein Spatenstich.</li>{{/each}}
-        </ol>
+        <h2>Versorgung der Expedition</h2>
+        <div class="ausg-bars">
+          {{#each res}}
+            <div class="ausg-bar {{lvl}}"><span class="l">{{label}}</span><span class="track"><span class="fill" style="width:{{v}}%"></span></span><span class="v">{{v}} %</span></div>
+          {{/each}}
+        </div>
+        <div class="ausg-days">
+          <span>Tag <b>{{day}}</b></span>
+          <span class="track"><span class="fill" style="width:{{dayPct}}%"></span></span>
+          <span>Durchbruch etwa Tag {{bt}}</span>
+        </div>
+        <p class="ausg-muted">Ausgaben bisher: {{spentTotal}} D{{#if budget}} · verbleibend {{budgetLeft}} D{{/if}}{{#if nextBonus}} · nächster Abschnitt 1 Tag kürzer{{/if}}</p>
+        {{#if supplyWarn}}<p class="ausg-warn">{{supplyWarn}}</p>{{/if}}
+        {{#if wheel}}<p class="ausg-warn">{{wheel}}</p>{{/if}}
+        {{#if insight}}<p class="ausg-goodtext">Erkenntnis gewonnen: Es wird tiefer und entlang des alten Flussbetts gegraben.</p>{{/if}}
+        {{#if breakthrough}}<p class="ausg-goodtext"><b>Der Durchbruch ist erfolgt.</b></p>{{/if}}
       </div>
-      {{/unless}}
+
+      <div class="ausg-panel">
+        <h2>Graben</h2>
+        <p class="ausg-muted">Gegraben wird per Klick auf ein abgestecktes Feld der Szene. Nach einer Rückfrage wird die Leitung ausgelost, gewürfelt und das Feld aufgedeckt.</p>
+        <div class="ausg-row">
+          <button type="button" data-action="pick" class="{{#unless picking}}primary{{/unless}}"><i class="fa-solid {{#if picking}}fa-pause{{else}}fa-trowel{{/if}}"></i> {{#if picking}}Feldwahl pausieren{{else}}Feldwahl fortsetzen{{/if}}</button>
+        </div>
+        <label class="ausg-lead">Leitung für den nächsten Abschnitt
+          <select data-leader>
+            <option value="">auslosen (Standard)</option>
+            {{#each leaderOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if note}} ({{note}}){{/if}}</option>{{/each}}
+          </select>
+        </label>
+        {{#if last}}<div class="ausg-last">{{{last}}}</div>{{/if}}
+      </div>
+    {{/if}}
     </section>
 
     <section class="ausg-right">
@@ -225,52 +249,6 @@
       </div>
     {{else}}
       <div class="ausg-panel">
-        <h2>Versorgung der Expedition</h2>
-        <div class="ausg-bars">
-          {{#each res}}
-            <div class="ausg-bar {{lvl}}"><span class="l">{{label}}</span><span class="track"><span class="fill" style="width:{{v}}%"></span></span><span class="v">{{v}} %</span></div>
-          {{/each}}
-        </div>
-        <div class="ausg-days">
-          <span>Tag <b>{{day}}</b></span>
-          <span class="track"><span class="fill" style="width:{{dayPct}}%"></span></span>
-          <span>Durchbruch etwa Tag {{bt}}</span>
-        </div>
-        <p class="ausg-muted">Ausgaben bisher: {{spentTotal}} D{{#if budget}} · verbleibend {{budgetLeft}} D{{/if}}{{#if nextBonus}} · nächster Abschnitt 1 Tag kürzer{{/if}}</p>
-        {{#if supplyWarn}}<p class="ausg-warn">{{supplyWarn}}</p>{{/if}}
-        {{#if wheel}}<p class="ausg-warn">{{wheel}}</p>{{/if}}
-        {{#if insight}}<p class="ausg-goodtext">Erkenntnis gewonnen: Es wird tiefer und entlang des alten Flussbetts gegraben.</p>{{/if}}
-        {{#if breakthrough}}<p class="ausg-goodtext"><b>Der Durchbruch ist erfolgt.</b></p>{{/if}}
-      </div>
-
-      <div class="ausg-panel">
-        <h2>Nächster Abschnitt</h2>
-        <div class="ausg-row">
-          <button type="button" data-action="pick" class="{{#if picking}}active{{/if}}"><i class="fa-solid fa-crosshairs"></i> {{#if picking}}Feldwahl beenden{{else}}Feld auf der Karte wählen{{/if}}</button>
-        </div>
-        {{#if sel}}
-          <h3>Abschnitt {{sel.name}}</h3>
-          {{#if sel.preview}}<p class="ausg-muted">SL-Vorschau: {{sel.preview}}</p>{{/if}}
-          <div class="ausg-row">
-            <button type="button" data-action="draw"><i class="fa-solid fa-dice"></i> {{#if sel.drawn}}Neu auslosen{{else}}Leitung auslosen{{/if}}</button>
-            <label class="ausg-lead inline">oder festlegen
-              <select data-leader>
-                <option value="">– wählen –</option>
-                {{#each leaderOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if note}} ({{note}}){{/if}}</option>{{/each}}
-              </select>
-            </label>
-          </div>
-          <div class="ausg-row">
-            <button type="button" class="primary" data-action="dig" {{#unless hasLeader}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> Graben und würfeln</button>
-            <button type="button" data-action="clear">Auswahl aufheben</button>
-          </div>
-        {{else}}
-          <p class="ausg-muted">Die Spieler wählen das Feld mit dem Schalter ⛏ in der Token-Leiste direkt auf der Karte. Du kannst auch im Plan links klicken.</p>
-        {{/if}}
-        {{#if last}}<div class="ausg-last">{{{last}}}</div>{{/if}}
-      </div>
-
-      <div class="ausg-panel">
         <h2>Helden vor Ort <span class="ausg-src">nur für dich sichtbar</span></h2>
         {{#if noHeroes}}<p class="ausg-muted">Keine Helden in der Gruppe. Die Spielleitung wählt sie im Reiter „Spielleitung“.</p>{{/if}}
         <div class="ausg-heroes">
@@ -293,6 +271,12 @@
         <ul class="ausg-finds">
           {{#each finds}}<li>{{#if key}}✦ {{/if}}{{cell}}: {{text}}</li>{{else}}<li class="ausg-muted">Noch nichts gefunden.</li>{{/each}}
         </ul>
+      </div>
+      <div class="ausg-panel">
+        <h2>Grabungsbuch</h2>
+        <ol class="ausg-log">
+          {{#each log}}<li class="{{#if gm}}gm{{/if}}"><span class="d">Tag {{day}}</span> {{text}}</li>{{else}}<li class="ausg-muted">Noch kein Spatenstich.</li>{{/each}}
+        </ol>
       </div>
     {{/if}}
     </section>

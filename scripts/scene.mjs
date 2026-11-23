@@ -61,7 +61,11 @@ export async function syncTiles(scene, state = getState(scene)) {
       want.set(k, tileData(k, `${ASSETS}/tiles/fels${i % 3}.webp`, x, y, s, s, 1));
       return;
     }
-    if (!c.dug) return;
+    if (!c.dug) {
+      const k = `deckel:${i}`;
+      want.set(k, tileData(k, `${ASSETS}/tiles/unberuehrt.webp`, x, y, s, s, 1));
+      return;
+    }
     // Portal erst nach dem Durchbruch; vorher wie Flussbett
     const tex = c.kind === "portal" && state.run?.breakthrough ? "portal"
       : (c.kind === "fluss" || c.kind === "portal") ? "flussbett"

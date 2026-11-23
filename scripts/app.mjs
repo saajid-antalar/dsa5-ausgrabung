@@ -5,7 +5,7 @@ import {
   STATE_VERSION, pushLog
 } from "./logic.mjs";
 import { findDigScene, createDigScene, syncTiles, cellCenter } from "./scene.mjs";
-import { clientDig, clientDrawLeader, request, resultHTML, deleteTestMessages, postStoryCard, postBreakthroughCard, setPicking, isPicking } from "./main.mjs";
+import { request, resultHTML, deleteTestMessages, postStoryCard, postBreakthroughCard, setPicking, isPicking } from "./main.mjs";
 
 const TERRAIN_COLORS = { sand: "#c9a86a", lehm: "#a0703f", geroell: "#7d6a55", mauer: "#5b4a6e", hohl: "#8a3a22" };
 const KIND_LABEL = { fund: "✦", fluss: "≈", portal: "⌂" };
@@ -37,9 +37,6 @@ function buildClass() {
           if (canvas?.scene?.id !== this.scene?.id) return ui.notifications.warn("Bitte zuerst die Grabungsszene ansehen.");
           setPicking(!isPicking());
         },
-        dig: function () { const s = this.scene; if (s) clientDig(s); },
-        draw: function () { const s = this.scene; if (s) clientDrawLeader(s); },
-        clear: function () { request("select", { sceneId: this.scene.id, idx: null }); },
         paint: function (ev, t) { this.paint = t.dataset.mode; this.render(); },
         createScene: async function () { await createDigScene(); this.render(); },
         viewScene: function () { this.scene?.view(); },
@@ -133,22 +130,9 @@ function buildClass() {
             o.text = t.short ?? t.name;
             if (cell.kind) { o.cls.push("gmkind"); o.mark = KIND_LABEL[cell.kind]; }
           }
-          if (i === state.selected && !gmTab) o.cls.push("sel");
           o.cls = o.cls.join(" ");
           o.disabled = !gmTab && (!cell.area || cell.dug);
           board.push(o);
-        }
-      }
-
-      let sel = null;
-      const selIdx = state.selected;
-      if (selIdx != null && !gmTab && !state.cells[selIdx]?.dug) {
-        sel = { name: cellName(selIdx), drawn: state.leaderFor === selIdx && !!state.leader };
-        {
-          const c = costOf(state, selIdx);
-          const lab = Object.fromEntries(RES.map(r => [r.key, r.label]));
-          const lacks = c.lacks.map(l => `${lab[l.key]} ${l.have}/${l.need} %`).join(", ");
-          sel.preview = `${c.t.name}${state.cells[selIdx].kind ? ` (${state.cells[selIdx].kind})` : ""}: ${c.days} Tg., ${c.wage} D${lacks ? `, Mangel: ${lacks}` : ""}`;
         }
       }
 
@@ -166,9 +150,8 @@ function buildClass() {
         insight: state.run.insight,
         breakthrough: state.run.breakthrough,
         nextBonus: state.run.nextBonus,
-        board, sel,
-        leaderOptions: present.map(h => ({ id: h.id, name: h.name, selected: h.id === state.leader && state.leaderFor === selIdx, note: h.luck > 0 ? "Glück" : h.luck < 0 ? "Pech" : "" })),
-        hasLeader: present.some(h => h.id === state.leader) && state.leaderFor === selIdx,
+        board,
+        leaderOptions: present.map(h => ({ id: h.id, name: h.name, selected: h.id === state.leader && state.leaderFor === -1, note: h.luck > 0 ? "Glück" : h.luck < 0 ? "Pech" : "" })),
         picking: isPicking(),
         heroes, noHeroes: !heroes.length,
         last: state.last ? resultHTML(state, state.last) : "",
@@ -267,10 +250,7 @@ function buildClass() {
           }
         });
       }
-      const c = getState(scene)?.cells[i];
-      if (!c?.area || c.dug) return;
-      request("select", { sceneId: scene.id, idx: i });
-      if (canvas?.scene?.id === scene.id && canvas.ping) canvas.ping(cellCenter(scene, i));
+      // Im Reiter „Grabung“ gibt es keinen Plan mehr; gegraben wird auf der Szene.
     }
   };
 }
