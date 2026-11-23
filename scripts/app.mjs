@@ -4,8 +4,8 @@ import {
   RES, OFFERS, STORY, resources, supplyMod, wheelBroken, offerCost, toggleOffer, triggerStory, revertStory, triggerBreakthrough,
   STATE_VERSION, pushLog
 } from "./logic.mjs";
-import { findDigScene, createDigScene, syncTiles, cellAt, cellCenter } from "./scene.mjs";
-import { clientDig, request, resultHTML, deleteTestMessages, postStoryCard, postBreakthroughCard } from "./main.mjs";
+import { findDigScene, createDigScene, syncTiles, cellCenter } from "./scene.mjs";
+import { clientDig, clientDrawLeader, request, resultHTML, deleteTestMessages, postStoryCard, postBreakthroughCard, setPicking, isPicking } from "./main.mjs";
 
 const TERRAIN_COLORS = { sand: "#c9a86a", lehm: "#a0703f", geroell: "#7d6a55", mauer: "#5b4a6e", hohl: "#8a3a22" };
 const KIND_LABEL = { fund: "✦", fluss: "≈", portal: "⌂" };
@@ -32,9 +32,13 @@ function buildClass() {
       actions: {
         tab: function (ev, t) { this.tab = t.dataset.tab; this.render(); },
         cell: function (ev, t) { this._onCell(Number(t.dataset.idx)); },
-        pick: function () { this._pickOnCanvas(); },
-        dig: function () { const s = this.scene; if (s && this.selected != null) { const i = this.selected; this.selected = null; clientDig(s, i); } },
-        clear: function () { this.selected = null; this.render(); },
+        pick: function () {
+          if (canvas?.scene?.id !== this.scene?.id) return ui.notifications.warn("Bitte zuerst die Grabungsszene ansehen.");
+          setPicking(!isPicking());
+        },
+        dig: function () { const s = this.scene; if (s) clientDig(s); },
+        draw: function () { const s = this.scene; if (s) clientDrawLeader(s); },
+        clear: function () { request("select", { sceneId: this.scene.id, idx: null }); },
         paint: function (ev, t) { this.paint = t.dataset.mode; this.render(); },
         createScene: async function () { await createDigScene(); this.render(); },
         viewScene: function () { this.scene?.view(); },
@@ -80,8 +84,8 @@ function buildClass() {
           if (p >= 0 && canvas?.scene?.id === scene.id) canvas.ping?.(cellCenter(scene, p));
         },
         testStart: function () { this._gmEdit(s => startTest(s)); },
-        testReset: async function () { this.selected = null; await this._gmEdit(s => restoreTest(s, true), true); await deleteTestMessages(); ui.notifications.info("Test zurückgesetzt."); },
-        testEnd: async function () { this.selected = null; await this._gmEdit(s => restoreTest(s, false), true); await deleteTestMessages(); ui.notifications.info("Testmodus beendet, Stand vor dem Test wiederhergestellt."); }
+        testReset: async function () { await this._gmEdit(s => restoreTest(s, true), true); await deleteTestMessages(); ui.notifications.info("Test zurückgesetzt."); },
+        testEnd: async function () { await this._gmEdit(s => restoreTest(s, false), true); await deleteTestMessages(); ui.notifications.info("Testmodus beendet, Stand vor dem Test wiederhergestellt."); }
       }
     };
 
@@ -90,7 +94,6 @@ function buildClass() {
     };
 
     tab = "spiel";
-    selected = null;
     paint = "area";
 
     get scene() { return findDigScene(); }
@@ -129,7 +132,7 @@ function buildClass() {
             o.text = t.short ?? t.name;
             if (cell.kind) { o.cls.push("gmkind"); o.mark = KIND_LABEL[cell.kind]; }
           }
-          if (i === this.selected) o.cls.push("sel");
+          if (i === state.selected && !gmTab) o.cls.push("sel");
           o.cls = o.cls.join(" ");
           o.disabled = !gmTab && (!cell.area || cell.dug);
           board.push(o);
@@ -137,13 +140,14 @@ function buildClass() {
       }
 
       let sel = null;
-      if (this.selected != null && !gmTab) {
-        sel = { name: cellName(this.selected) };
-        if (isGM) {
-          const c = costOf(state, this.selected);
+      const selIdx = state.selected;
+      if (selIdx != null && !gmTab && !state.cells[selIdx]?.dug) {
+        sel = { name: cellName(selIdx), drawn: state.leaderFor === selIdx && !!state.leader };
+        {
+          const c = costOf(state, selIdx);
           const lab = Object.fromEntries(RES.map(r => [r.key, r.label]));
           const lacks = c.lacks.map(l => `${lab[l.key]} ${l.have}/${l.need} %`).join(", ");
-          sel.preview = `${c.t.name}${state.cells[this.selected].kind ? ` (${state.cells[this.selected].kind})` : ""}: ${c.days} Tg., ${c.wage} D${lacks ? `, Mangel: ${lacks}` : ""}`;
+          sel.preview = `${c.t.name}${state.cells[selIdx].kind ? ` (${state.cells[selIdx].kind})` : ""}: ${c.days} Tg., ${c.wage} D${lacks ? `, Mangel: ${lacks}` : ""}`;
         }
       }
 
@@ -162,8 +166,9 @@ function buildClass() {
         breakthrough: state.run.breakthrough,
         nextBonus: state.run.nextBonus,
         board, sel,
-        leaderOptions: present.map(h => ({ id: h.id, name: h.name, selected: h.id === state.leader, note: h.luck > 0 ? "Glück" : h.luck < 0 ? "Pech" : "" })),
-        hasLeader: present.some(h => h.id === state.leader),
+        leaderOptions: present.map(h => ({ id: h.id, name: h.name, selected: h.id === state.leader && state.leaderFor === selIdx, note: h.luck > 0 ? "Glück" : h.luck < 0 ? "Pech" : "" })),
+        hasLeader: present.some(h => h.id === state.leader) && state.leaderFor === selIdx,
+        picking: isPicking(),
         heroes, noHeroes: !heroes.length,
         last: state.last ? resultHTML(state, state.last) : "",
         finds: state.finds,
@@ -261,23 +266,10 @@ function buildClass() {
           }
         });
       }
-      this.selected = i;
+      const c = getState(scene)?.cells[i];
+      if (!c?.area || c.dug) return;
+      request("select", { sceneId: scene.id, idx: i });
       if (canvas?.scene?.id === scene.id && canvas.ping) canvas.ping(cellCenter(scene, i));
-      this.render();
-    }
-
-    _pickOnCanvas() {
-      const scene = this.scene;
-      if (canvas?.scene?.id !== scene?.id) return ui.notifications.warn("Bitte zuerst die Grabungsszene ansehen.");
-      ui.notifications.info("Klicke auf der Karte auf ein Feld im Grabungsbereich.");
-      canvas.stage.once("pointerdown", ev => {
-        const pt = ev.getLocalPosition ? ev.getLocalPosition(canvas.stage) : canvas.mousePosition;
-        const i = cellAt(scene, pt);
-        const st = getState(scene);
-        if (i == null || !st.cells[i].area || st.cells[i].dug) return ui.notifications.warn("Dort kann nicht gegraben werden.");
-        this.selected = i;
-        this.render({ force: true });
-      });
     }
   };
 }

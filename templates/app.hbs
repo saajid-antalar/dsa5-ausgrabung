@@ -245,41 +245,38 @@
 
       <div class="ausg-panel">
         <h2>Nächster Abschnitt</h2>
+        <div class="ausg-row">
+          <button type="button" data-action="pick" class="{{#if picking}}active{{/if}}"><i class="fa-solid fa-crosshairs"></i> {{#if picking}}Feldwahl beenden{{else}}Feld auf der Karte wählen{{/if}}</button>
+        </div>
         {{#if sel}}
-          <h3>Abschnitt {{sel.name}} öffnen</h3>
-          <label class="ausg-lead">Grabungsleitung
-            <select data-leader>
-              <option value="">– wählen –</option>
-              {{#each leaderOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if note}} ({{note}}){{/if}}</option>{{/each}}
-            </select>
-          </label>
+          <h3>Abschnitt {{sel.name}}</h3>
           {{#if sel.preview}}<p class="ausg-muted">SL-Vorschau: {{sel.preview}}</p>{{/if}}
           <div class="ausg-row">
+            <button type="button" data-action="draw"><i class="fa-solid fa-dice"></i> {{#if sel.drawn}}Neu auslosen{{else}}Leitung auslosen{{/if}}</button>
+            <label class="ausg-lead inline">oder festlegen
+              <select data-leader>
+                <option value="">– wählen –</option>
+                {{#each leaderOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if note}} ({{note}}){{/if}}</option>{{/each}}
+              </select>
+            </label>
+          </div>
+          <div class="ausg-row">
             <button type="button" class="primary" data-action="dig" {{#unless hasLeader}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> Graben und würfeln</button>
-            <button type="button" data-action="clear">Abbrechen</button>
+            <button type="button" data-action="clear">Auswahl aufheben</button>
           </div>
         {{else}}
-          <p class="ausg-muted">Feld im Plan anklicken oder auf der Karte wählen. Wie lange es dauert, was fehlt und was dort geschieht, zeigt sich erst beim Graben.</p>
-          <div class="ausg-row">
-            <button type="button" data-action="pick"><i class="fa-solid fa-crosshairs"></i> Feld auf der Karte wählen</button>
-          </div>
-          <label class="ausg-lead">Grabungsleitung
-            <select data-leader>
-              <option value="">– wählen –</option>
-              {{#each leaderOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if note}} ({{note}}){{/if}}</option>{{/each}}
-            </select>
-          </label>
+          <p class="ausg-muted">Die Spieler wählen das Feld mit dem Schalter ⛏ in der Token-Leiste direkt auf der Karte. Du kannst auch im Plan links klicken.</p>
         {{/if}}
         {{#if last}}<div class="ausg-last">{{{last}}}</div>{{/if}}
       </div>
 
       <div class="ausg-panel">
-        <h2>Helden vor Ort</h2>
+        <h2>Helden vor Ort <span class="ausg-src">nur für dich sichtbar</span></h2>
         {{#if noHeroes}}<p class="ausg-muted">Keine Helden in der Gruppe. Die Spielleitung wählt sie im Reiter „Spielleitung“.</p>{{/if}}
         <div class="ausg-heroes">
           {{#each heroes}}
             <div class="ausg-hero {{#if isLeader}}lead{{/if}} {{#unless present}}absent{{/unless}}">
-              <input type="checkbox" data-present="{{id}}" {{#if present}}checked{{/if}} {{#unless canEdit}}disabled{{/unless}} title="arbeitet heute mit">
+              <input type="checkbox" data-present="{{id}}" {{#if present}}checked{{/if}} title="arbeitet mit">
               <img src="{{img}}" alt="">
               <div>
                 <div class="nm">{{name}}{{#if isLeader}} <span class="ausg-muted">· leitet</span>{{/if}}</div>

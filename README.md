@@ -10,7 +10,15 @@ In Foundry unter *Module installieren* diese Manifest-URL eintragen:
 https://raw.githubusercontent.com/saajid-antalar/dsa5-ausgrabung/main/module.json
 ```
 
-Danach das Modul in der Welt aktivieren. Über das Kellensymbol in der Token-Leiste oder das Makro **⛏️ Ausgrabung** öffnet sich das Grabungsfenster. Die Spielleitung legt dort einmalig die Szene **Grabungsstätte im Khôm** an (Szenenordner „Drachenchronik“).
+Danach das Modul in der Welt aktivieren. Die Spielleitung öffnet über das Kellensymbol in der Token-Leiste oder das Makro **⛏️ Ausgrabung** das große Grabungsfenster und legt dort einmalig die Szene **Grabungsstätte im Khôm** an (Szenenordner „Drachenchronik“).
+
+## Ablauf am Tisch
+
+1. **Feld wählen:** In der Token-Leiste den Schalter *Grabungsfeld auf der Karte wählen* einschalten. Die Felder leuchten beim Überfahren auf, ein Klick wählt den Abschnitt; alle sehen die Auswahl auf der Karte. Ist der Schalter aus, verhalten sich Tokens wie gewohnt.
+2. **Leitung auslosen:** Im Übersichtsfenster *Leitung auslosen* klicken. Unter den anwesenden Helden wird im Chat gewürfelt, wer den Abschnitt leitet; dessen Glück oder Pech zählt für den Ereigniswurf. Pro Abschnitt wird einmal gelost; die Spielleitung kann neu losen oder jemanden festlegen.
+3. **Graben und würfeln:** Der Ereigniswurf läuft im Chat, danach erscheint die Ergebniskarte und das Feld auf der Szene.
+
+Spieler sehen ein kleines **Übersichtsfenster** (öffnet sich auf der Grabungsszene von selbst): Versorgung, Tag, gewählter Abschnitt mit Leitung, letztes Ergebnis, Funde und Grabungsbuch. Wer vor Ort mitarbeitet, sieht und ändert nur die Spielleitung.
 
 ## Versorgung (S. 34–36)
 

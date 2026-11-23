@@ -163,7 +163,7 @@ export function newState() {
     funde: FUND_CELLS.map((p, k) => ({ idx: idx(p), text: ERSTE_FUNDE[k] })),
     offers: { alim: { cost: 0 } },
     custom: [],
-    party: defaultParty(), absent: [], leader: null,
+    party: defaultParty(), absent: [], leader: null, leaderFor: null, selected: null,
     log: [], finds: [], last: null, run: {}, story: {}
   };
   resetRun(s);
@@ -174,6 +174,7 @@ export function newState() {
 export function resetRun(s) {
   s.run = { day: 0, spent: 0, adj: ZERO(), nextBonus: 0, wheelUntil: 0, insight: false, insightBonus: 0, breakthrough: false };
   s.log = []; s.finds = []; s.last = null; s.story = {};
+  s.selected = null; s.leader = null; s.leaderFor = null;
   s.cells.forEach(c => { c.dug = false; c.hint = null; c.event = null; });
 }
 
@@ -432,6 +433,7 @@ export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId }) {
   cell.dug = true; cell.event = last.ev.kind;
   last.insight = checkInsight(state);
   state.last = last;
+  state.selected = null; state.leader = null; state.leaderFor = null;
   pushLog(state, `${cellName(i)} (${cost.t.name}, ${cost.days} Tg.) · ${last.ev.title}${key ? " · ✦ " + key.split(".")[0] : ""}`);
   await setState(scene, state);
   return { state, last, lead };

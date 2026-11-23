@@ -1,0 +1,61 @@
+<div class="ausg-hud">
+{{#if none}}
+  <p class="ausg-muted">Die Spielleitung hat die Grabungsstätte noch nicht eingerichtet.</p>
+{{else}}
+  {{#if testActive}}<div class="ausg-testbanner"><span><b>Testmodus</b> · zählt nicht</span></div>{{/if}}
+  <div class="ausg-hud-scroll">
+    <section class="ausg-hud-sec">
+      <div class="ausg-bars">
+        {{#each res}}
+          <div class="ausg-bar {{lvl}}"><span class="l">{{label}}</span><span class="track"><span class="fill" style="width:{{v}}%"></span></span><span class="v">{{v}} %</span></div>
+        {{/each}}
+      </div>
+      <div class="ausg-days">
+        <span>Tag <b>{{day}}</b></span>
+        <span class="track"><span class="fill" style="width:{{dayPct}}%"></span></span>
+        <span>≈ {{bt}}</span>
+      </div>
+      <p class="ausg-muted">Ausgaben: {{spent}} D</p>
+      {{#each warn}}<p class="ausg-warn">{{this}}</p>{{/each}}
+      {{#if insight}}<p class="ausg-goodtext">Erkenntnis: Es wird tiefer und entlang des Flussbetts gegraben.</p>{{/if}}
+      {{#if breakthrough}}<p class="ausg-goodtext"><b>Der Durchbruch ist erfolgt.</b></p>{{/if}}
+    </section>
+
+    <section class="ausg-hud-sec">
+      <h3>Nächster Abschnitt</h3>
+      {{#unless onScene}}
+        <button type="button" data-action="viewScene"><i class="fa-solid fa-map-location-dot"></i> Zur Grabungsszene</button>
+      {{else}}
+        <button type="button" data-action="pick" class="{{#if picking}}active{{/if}}"><i class="fa-solid fa-crosshairs"></i> {{#if picking}}Feldwahl beenden{{else}}Feld auf der Karte wählen{{/if}}</button>
+      {{/unless}}
+      {{#if selName}}
+        <p class="ausg-hud-sel">Abschnitt <b>{{selName}}</b></p>
+        {{#if lead}}
+          <p>Leitung: <b>{{lead.name}}</b>{{#if lead.luck}} <span class="ausg-muted">({{lead.luck}})</span>{{/if}}</p>
+        {{else}}
+          <button type="button" data-action="draw"><i class="fa-solid fa-dice"></i> Leitung auslosen</button>
+        {{/if}}
+        <div class="ausg-row">
+          <button type="button" class="primary" data-action="dig" {{#unless canDig}}disabled{{/unless}}><i class="fa-solid fa-dice-d20"></i> Graben und würfeln</button>
+        </div>
+      {{else}}
+        <p class="ausg-muted">Noch kein Feld gewählt. Was darunter liegt und was es kostet, zeigt sich erst beim Graben.</p>
+      {{/if}}
+      {{#if last}}<div class="ausg-last">{{{last}}}</div>{{/if}}
+    </section>
+
+    <details class="ausg-hud-sec" open>
+      <summary>Funde ({{finds.length}})</summary>
+      <ul class="ausg-finds">
+        {{#each finds}}<li>{{#if key}}✦ {{/if}}{{cell}}: {{text}}</li>{{else}}<li class="ausg-muted">Noch nichts gefunden.</li>{{/each}}
+      </ul>
+    </details>
+    <details class="ausg-hud-sec">
+      <summary>Grabungsbuch</summary>
+      <ol class="ausg-log">
+        {{#each log}}<li><span class="d">Tag {{day}}</span> {{text}}</li>{{else}}<li class="ausg-muted">Noch kein Spatenstich.</li>{{/each}}
+      </ol>
+    </details>
+  </div>
+{{/if}}
+</div>

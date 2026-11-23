@@ -7,18 +7,56 @@ export async function deleteTestMessages() {
   const ids = game.messages.filter(m => m.getFlag(ID, "test")).map(m => m.id);
   if (ids.length) await ChatMessage.deleteDocuments(ids);
 }
-import { createDigScene, syncTiles, findDigScene } from "./scene.mjs";
+import { createDigScene, syncTiles, findDigScene, isDigScene } from "./scene.mjs";
 import { AusgrabungApp } from "./app.mjs";
+import { AusgrabungHud } from "./hud.mjs";
+import { DigOverlay } from "./overlay.mjs";
 
 const SOCKET = `module.${ID}`;
-let app = null;
+let app = null, hud = null, overlay = null, picking = false;
 
+/** Spielleitung: großes Fenster. Spieler: kleine Übersicht. */
 export function openApp() {
-  app ??= new AusgrabungApp();
-  app.render({ force: true });
-  return app;
+  if (game.user.isGM) { app ??= new AusgrabungApp(); app.render({ force: true }); return app; }
+  return openHud();
 }
-function refreshApp() { if (app?.rendered) app.render(); }
+export function openHud() {
+  hud ??= new AusgrabungHud();
+  hud.render({ force: true });
+  return hud;
+}
+function refreshApp() {
+  if (app?.rendered) app.render();
+  if (hud?.rendered) hud.render();
+  overlay?.refresh();
+}
+
+// ---------- Feldwahl auf der Szene ----------
+export function isPicking() { return picking; }
+export function setPicking(on) {
+  if (on && !isDigScene(canvas?.scene)) { ui.notifications.warn("Die Feldwahl geht nur auf der Grabungsszene."); on = false; }
+  picking = !!on;
+  overlay?.setPicking(picking);
+  try {
+    const tool = ui.controls?.controls?.tokens?.tools?.ausgrabungFeld;
+    if (tool && tool.active !== picking) { tool.active = picking; ui.controls.render(); }
+  } catch (e) { /* Werkzeugleiste ist nur Anzeige */ }
+  if (hud?.rendered) hud.render();
+  if (app?.rendered) app.render();
+}
+function pickCell(i) {
+  const scene = canvas.scene;
+  request("select", { sceneId: scene.id, idx: i });
+  if (!game.user.isGM) openHud();
+}
+function buildOverlay() {
+  overlay?.destroy(); overlay = null;
+  if (!isDigScene(canvas?.scene)) { picking = false; return; }
+  try {
+    overlay = new DigOverlay(canvas.scene, pickCell);
+    overlay.setPicking(picking);
+  } catch (e) { console.error(`${ID} | Feld-Ebene konnte nicht erstellt werden`, e); }
+}
 
 // ---------- Anfragen an die Spielleitung ----------
 export function gmOnline() {
@@ -46,17 +84,34 @@ async function handle(action, p) {
       if (!actor?.testUserPermission(user, "OWNER")) return;
       const res = await gmReroll(scene, p);
       if (res) { await syncTiles(scene, res.state); await postCard(scene, res); }
+    } else if (action === "select") {
+      const s = getState(scene);
+      const c = p.idx == null ? null : s.cells[p.idx];
+      if (p.idx != null && (!c || !c.area || c.dug)) return;
+      if (s.selected === p.idx) return;
+      s.selected = p.idx ?? null;
+      s.leader = null; s.leaderFor = null;   // neue Stelle, neue Leitung
+      await setState(scene, s);
+    } else if (action === "draw") {
+      const s = getState(scene);
+      if (s.selected == null || s.selected !== p.idx) return;
+      if (s.leaderFor === p.idx && s.leader && !user?.isGM) return;   // schon ausgelost
+      const hero = partyProfiles(s).find(h => h.id === p.actorId && h.present);
+      if (!hero) return;
+      s.leader = hero.id; s.leaderFor = p.idx;
+      await setState(scene, s);
     } else if (action === "present") {
-      const actor = game.actors.get(p.actorId);
-      if (!actor?.testUserPermission(user, "OWNER")) return;
+      if (!user?.isGM) return;
       const s = getState(scene);
       s.absent = (s.absent ?? []).filter(id => id !== p.actorId);
       if (!p.present) s.absent.push(p.actorId);
       if (!p.present && s.leader === p.actorId) s.leader = null;
       await setState(scene, s);
     } else if (action === "leader") {
+      if (!user?.isGM) return;
       const s = getState(scene);
       s.leader = p.actorId || null;
+      s.leaderFor = p.actorId ? s.selected : null;
       await setState(scene, s);
     }
   } catch (e) {
@@ -78,18 +133,40 @@ async function rollEvent(actor, flavor, test = false) {
   return roll.dice[0]?.total ?? roll.total;
 }
 
-export async function clientDig(scene, idx) {
+export async function clientDig(scene) {
   const state = getState(scene);
-  const cell = state?.cells[idx];
-  if (!cell?.area || cell.dug) return ui.notifications.warn("Dieses Feld kann nicht (mehr) gegraben werden.");
-  const leader = state.leader ? game.actors.get(state.leader) : null;
-  if (!leader || (state.absent ?? []).includes(leader.id)) return ui.notifications.warn("Bitte zuerst eine anwesende Grabungsleitung wählen.");
+  const idx = state?.selected;
+  const cell = idx != null ? state.cells[idx] : null;
+  if (!cell?.area || cell.dug) return ui.notifications.warn("Bitte zuerst ein Feld auf der Karte wählen.");
+  const leader = state.leader && state.leaderFor === idx ? game.actors.get(state.leader) : null;
+  if (!leader || (state.absent ?? []).includes(leader.id)) return ui.notifications.warn("Bitte zuerst die Grabungsleitung auslosen.");
   if (!gmOnline()) return;
   const test = !!state.test?.active;
   // Im Testmodus mit festgelegtem W20 wird nicht gewürfelt, der SL-Client setzt den Testwert ein.
   const d20 = test && Number(state.test.forceD20) > 0 ? 0
     : await rollEvent(leader, `<b>Ausgrabung ${cellName(idx)}</b> · Ereigniswurf`, test);
   await request("dig", { sceneId: scene.id, idx, leaderId: leader.id, d20 });
+}
+
+/** Lost unter den anwesenden Helden aus, wer den gewählten Abschnitt leitet (Würfel im Chat). */
+export async function clientDrawLeader(scene) {
+  const state = getState(scene);
+  const idx = state?.selected;
+  if (idx == null) return ui.notifications.warn("Bitte zuerst ein Feld auf der Karte wählen.");
+  if (state.leaderFor === idx && state.leader && !game.user.isGM) return ui.notifications.info("Die Leitung für diesen Abschnitt ist schon ausgelost.");
+  const present = partyProfiles(state).filter(p => p.present).sort((a, b) => a.name.localeCompare(b.name));
+  if (!present.length) return ui.notifications.warn("Keine Helden vor Ort. Die Spielleitung legt fest, wer mitarbeitet.");
+  if (!gmOnline()) return;
+  const roll = await new Roll(`1d${present.length}`).evaluate();
+  const hero = present[roll.total - 1];
+  const test = !!state.test?.active;
+  const luck = hero.luck > 0 ? ` (Glück, +${hero.luck})` : hero.luck < 0 ? ` (Pech, ${hero.luck})` : "";
+  await roll.toMessage({
+    flags: { [ID]: { test } },
+    speaker: ChatMessage.getSpeaker({ user: game.user }),
+    flavor: `${test ? "<b class=\"ausg-testtag\">TEST</b> " : ""}<b>Grabungsleitung für Abschnitt ${cellName(idx)}</b><br>Das Los fällt auf <b>${hero.name}</b>${luck}.`
+  });
+  await request("draw", { sceneId: scene.id, idx, actorId: hero.id });
 }
 
 export async function clientReroll(sceneId, digId, actorId) {
@@ -231,11 +308,22 @@ Hooks.once("ready", async () => {
 Hooks.on("getSceneControlButtons", controls => {
   const tokens = controls?.tokens ?? controls?.token;
   if (!tokens?.tools) return;
+  const order = Object.keys(tokens.tools).length;
+  tokens.tools.ausgrabungFeld = {
+    name: "ausgrabungFeld",
+    title: "Grabungsfeld auf der Karte wählen",
+    icon: "fa-solid fa-trowel-bricks",
+    order,
+    toggle: true,
+    active: picking,
+    visible: true,
+    onChange: (event, active) => setPicking(active)
+  };
   tokens.tools.ausgrabung = {
     name: "ausgrabung",
-    title: "Die Ausgrabung",
+    title: game.user.isGM ? "Die Ausgrabung (Spielleitung)" : "Übersicht der Ausgrabung",
     icon: "fa-solid fa-trowel",
-    order: Object.keys(tokens.tools).length,
+    order: order + 1,
     button: true,
     visible: true,
     onChange: () => openApp()
@@ -246,7 +334,13 @@ Hooks.on("updateScene", (scene, diff) => {
   if (foundry.utils.hasProperty(diff, `flags.${ID}`)) refreshApp();
 });
 Hooks.on("updateActor", () => refreshApp());
-Hooks.on("canvasReady", () => refreshApp());
+Hooks.on("canvasReady", () => {
+  buildOverlay();
+  refreshApp();
+  // Spieler bekommen auf der Grabungsszene automatisch die Übersicht
+  if (!game.user.isGM && isDigScene(canvas.scene)) openHud();
+});
+Hooks.on("canvasTearDown", () => { overlay?.destroy(); overlay = null; });
 
 Hooks.on("renderChatMessageHTML", (message, html) => {
   const el = html instanceof HTMLElement ? html : html?.[0];
