@@ -1,7 +1,11 @@
 // Szene im Khôm anlegen und die Felder als Kacheln (Tiles) darstellen.
 import { ID, ASSETS, DEFAULT_LAYOUT, newState, getState, setState, getLayout, STATE_VERSION } from "./logic.mjs";
 
-const BG = `${ASSETS}/khom-grabung.webp`;
+const BG = `${ASSETS}/grabungsstaette.webp`;
+// Szene ab Version 1.4: 4400 × 3600 px, unsichtbares Raster 50 px = 1 Schritt, Grabungsfeld bei 1200/800
+export const SCENE_VERSION = 2;
+const SCENE_SIZE = { width: 4400, height: 3600 };
+const SCENE_GRID = { type: 1, size: 50, distance: 1, units: "Schritt", color: "#3a2412", alpha: 0, thickness: 1 };
 const TERRAIN_TEX = { sand: "sand", lehm: "lehm", geroell: "geroell", mauer: "mauer", hohl: "hohl" };
 
 export function isDigScene(scene) { return !!scene?.getFlag(ID, "layout"); }
@@ -16,14 +20,14 @@ export async function createDigScene() {
   const state = newState();
   const data = {
     name: "Grabungsstätte im Khôm",
-    width: 3200, height: 2800, padding: 0,
+    ...SCENE_SIZE, padding: 0,
     background: { src: BG },
     backgroundColor: "#7a5a34",
-    grid: { type: 1, size: DEFAULT_LAYOUT.cell, distance: 2, units: "Schritt", color: "#3a2412", alpha: 0.45, thickness: 2 },
-    initial: { x: 1600, y: 1400, scale: 0.35 },
+    grid: SCENE_GRID,
+    initial: { x: 2200, y: 1800, scale: 0.25 },
     tokenVision: false,
     fog: { exploration: false },
-    flags: { [ID]: { layout: DEFAULT_LAYOUT, state: JSON.stringify(state) } }
+    flags: { [ID]: { layout: DEFAULT_LAYOUT, sceneVersion: SCENE_VERSION, state: JSON.stringify(state) } }
   };
   // wie die Oase Bischa im Szenenordner „Drachenchronik“ ablegen
   let folder = game.folders.find(f => f.type === "Scene" && f.name === "Drachenchronik");
@@ -160,4 +164,34 @@ export async function calibrateTiles(scene) {
   await scene.setFlag(ID, "tileShift", shift);
   await syncTiles(scene);
   ui.notifications.info(`Ausgrabung: Kacheln um ${dx}/${dy} px ins Raster gerückt.`);
+}
+
+/**
+ * Bestehende Grabungsszene auf das neue Szenenbild umstellen: Größe, unsichtbares Raster, Hintergrund,
+ * Lage des Grabungsfeldes. Tokens, Zeichnungen und Notizen wandern mit, damit sie relativ zum Feld bleiben.
+ */
+export async function upgradeScene(scene) {
+  if (!game.user.isGM || !isDigScene(scene)) return false;
+  if ((scene.getFlag(ID, "sceneVersion") ?? 1) >= SCENE_VERSION) return false;
+  const old = getLayout(scene);
+  const dx = DEFAULT_LAYOUT.x - old.x, dy = DEFAULT_LAYOUT.y - old.y;
+  await scene.update({
+    ...SCENE_SIZE, padding: 0, "background.src": BG, grid: SCENE_GRID,
+    initial: { x: 2200, y: 1800, scale: 0.25 },
+    [`flags.${ID}.layout`]: DEFAULT_LAYOUT, [`flags.${ID}.sceneVersion`]: SCENE_VERSION
+  });
+  try {
+    const lvl = scene.levels?.contents?.[0] ?? scene.firstLevel;
+    if (lvl) await lvl.update({ "background.src": BG });
+  } catch (e) { console.warn(`${ID} | Ebene konnte nicht angepasst werden`, e); }
+  if (dx || dy) {
+    for (const type of ["Token", "Drawing", "Note"]) {
+      const coll = scene.getEmbeddedCollection(type);
+      const upd = coll.map(d => ({ _id: d.id, x: d.x + dx, y: d.y + dy }));
+      if (upd.length) await scene.updateEmbeddedDocuments(type, upd);
+    }
+  }
+  await syncTiles(scene);
+  ui.notifications.info(`Ausgrabung: „${scene.name}“ auf das neue Szenenbild umgestellt (4400 × 3600, Raster 1 Schritt).`);
+  return true;
 }

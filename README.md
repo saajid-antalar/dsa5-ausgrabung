@@ -24,6 +24,14 @@ Wer Tokens auf dem Grabungsfeld bewegen will, pausiert die Feldwahl über den Sc
 
 Spieler sehen ein kleines **Übersichtsfenster** (öffnet sich auf der Grabungsszene von selbst): Versorgung, Tag, Warnungen, Funde und ein knappes Grabungsbuch. Die Spielleitung hat ein großes Fenster: im Reiter *Grabung* Versorgung, Leitung, Helden vor Ort, letztes Ergebnis, Funde und Grabungsbuch; im Reiter *Spielleitung* Plan zum Einrichten, Beschaffung, Ereignisse, Durchbruch und Testmodus.
 
+## Szene und Maßstab
+
+Die Szene „Grabungsstätte im Khôm“ (4400 × 3600 px) zeigt die Grabung am Nordrand des Djurkaram als realistische Draufsicht: Lager mit Hilberts Novadizelt, Expeditions- und Heldenzelt, Küche, Werkzeuglager, Holzwerkstatt und 18 Arbeiterzelten in Gruppen um Feuerstellen, Wasserloch mit Palmen, Pferch, Förderrad und Weg nach Birscha.
+
+Die Szene hat ein **unsichtbares Raster von 50 px = 1 Schritt**, an dem Gruppentoken und NSC einrasten; das Messwerkzeug misst in Schritt. Ein Grabungsfeld entspricht 4 × 4 Schritt, das ganze Grabungsfeld 40 × 40 Schritt. Eine Maßstabsleiste mit Nordpfeil steht unten links auf der Karte.
+
+Szenen aus älteren Versionen stellt das Modul beim Laden der Welt durch die Spielleitung einmalig um (Größe, Raster, Bild, Lage des Grabungsfeldes); Tokens, Zeichnungen und Notizen wandern mit.
+
 ## Versorgung (S. 34–36)
 
 Sechs Ressourcen in Prozent: Wasser, Nahrung, Arbeiter, Holz, Werkzeug, Tiere. Ziel ist jeweils 100 %. Start mit der Unterstützung von Scheich Alim (Wasser 30, Nahrung 30, Arbeiter 40, Holz 5, Werkzeug 0, Tiere 30). Im Reiter **Spielleitung** stehen alle Angebote des Bandes zum Annehmen bereit: die drei Lösungen mit den Beni Schuf (schließen sich aus), Beni Achawi, Ruyad der Schmied, Serham ben Furka (Händler, Lasttiere, Arbeitssklaven) und die große Holz-Karawane. Dazu freie „kleinere Absprachen“. Kosten in Dukaten sind vor dem Annehmen anpassbar, der Tageslohn (1,6 D, also 192 D für vier Monate) läuft mit.

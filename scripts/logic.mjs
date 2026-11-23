@@ -6,7 +6,7 @@ export const ASSETS = `modules/${ID}/assets`;
 export const COLS = "ABCDEFGHIJ".split("");
 export const STATE_VERSION = 2;
 
-export const DEFAULT_LAYOUT = { x: 600, y: 400, cell: 200, n: 10 };
+export const DEFAULT_LAYOUT = { x: 1200, y: 800, cell: 200, n: 10 };
 
 export const RES = [
   { key: "wasser", label: "Wasser" },

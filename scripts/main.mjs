@@ -7,7 +7,7 @@ export async function deleteTestMessages() {
   const ids = game.messages.filter(m => m.getFlag(ID, "test")).map(m => m.id);
   if (ids.length) await ChatMessage.deleteDocuments(ids);
 }
-import { createDigScene, syncTiles, findDigScene, isDigScene, calibrateTiles } from "./scene.mjs";
+import { createDigScene, syncTiles, findDigScene, isDigScene, calibrateTiles, upgradeScene } from "./scene.mjs";
 import { AusgrabungApp } from "./app.mjs";
 import { AusgrabungHud } from "./hud.mjs";
 import { DigOverlay } from "./overlay.mjs";
@@ -340,6 +340,7 @@ Hooks.once("ready", async () => {
     await ensureMacro();
     // Grabungen aus Version 1.0 auf das Ressourcenmodell umstellen (Grabungsbereich bleibt erhalten)
     for (const sc of game.scenes.filter(x => x.getFlag(ID, "state"))) {
+      try { await upgradeScene(sc); } catch (e) { console.error(`${ID} | Szenenumstellung`, e); }
       const st = getState(sc);
       if (st && st.version !== STATE_VERSION) {
         const m = migrate(st);
