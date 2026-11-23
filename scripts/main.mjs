@@ -56,23 +56,14 @@ export async function digAt(scene, i) {
   const cell = state?.cells?.[i];
   if (!cell?.area || cell.dug) return;
   if (!gmOnline()) return;
-  const present = partyProfiles(state).filter(p => p.present).sort((a, b) => a.name.localeCompare(b.name));
+  const present = partyProfiles(state).filter(p => p.present);
   if (!present.length) return ui.notifications.warn("Keine Helden vor Ort. Die Spielleitung legt fest, wer mitarbeitet.");
   const preset = state.leader && (state.leaderFor === -1 || state.leaderFor === i) ? present.find(p => p.id === state.leader) : null;
   digBusy = true;
   try {
-    const ok = await confirmDig(cellName(i), preset);
-    if (!ok) return;
-    const test = !!state.test?.active;
-    let hero = preset, draw = null;
-    if (!hero) {
-      const roll = await new Roll(`1d${present.length}`).evaluate();
-      await showDice(roll);
-      hero = present[roll.total - 1];
-      draw = { n: present.length, r: roll.total };
-    }
-    const d20 = test && Number(state.test.forceD20) > 0 ? 0 : await rollEvent();
-    await request("dig", { sceneId: scene.id, idx: i, leaderId: hero.id, d20, draw });
+    if (!(await confirmDig(cellName(i), preset))) return;
+    // Leitung auslosen und würfeln übernimmt der Rechner der Spielleitung; die Spieler sehen das Ergebnis auf der Szene.
+    await request("dig", { sceneId: scene.id, idx: i });
   } finally { digBusy = false; }
 }
 
@@ -122,7 +113,21 @@ async function handleNow(action, p) {
   const user = game.users.get(p.userId);
   try {
     if (action === "dig") {
-      const res = await gmDig(scene, p);
+      const s = getState(scene);
+      const cell = s?.cells?.[p.idx];
+      if (!cell?.area || cell.dug) return;
+      const present = partyProfiles(s).filter(h => h.present);
+      if (!present.length) return ui.notifications.warn("Ausgrabung: Keine Helden vor Ort, bitte im Reiter Grabung festlegen.");
+      let leaderId = s.leader && (s.leaderFor === -1 || s.leaderFor === p.idx) && present.some(h => h.id === s.leader) ? s.leader : null;
+      let draw = null;
+      if (!leaderId) {
+        const pick = await drawLeader(present.map(h => game.actors.get(h.id)).filter(Boolean));
+        leaderId = pick.actor?.id; draw = pick.draw;
+      }
+      if (!leaderId) return;
+      const forced = s.test?.active && Number(s.test.forceD20) > 0;
+      const d20 = forced ? 0 : await rollEvent();
+      const res = await gmDig(scene, { ...p, leaderId, d20, draw });
       if (res) { await syncTiles(scene, res.state); await postCard(scene, res); }
     } else if (action === "reroll") {
       const actor = game.actors.get(p.actorId);
@@ -167,9 +172,31 @@ async function handleNow(action, p) {
 
 // ---------- Würfeln am Client ----------
 /** Würfel sichtbar machen: Dice So Nice, falls aktiv, sonst Würfelklang. Die Ergebnisse stehen auf der Ergebniskarte. */
+export function chatPublic() { try { return !!game.settings.get(ID, "ausgrabungPublicChat"); } catch (e) { return false; } }
+function gmWhisper() { return ChatMessage.getWhisperRecipients("GM").map(u => u.id); }
+function chatTarget() { return chatPublic() ? {} : { whisper: gmWhisper() }; }
+
+/** Grabungsleitung auslosen: DSA5-Zufallsgenerator des Gruppenbogens (Porträt-Karussell), sonst eigener Wurf. */
+async function drawLeader(actors) {
+  const RV = game.dsa5?.apps?.RandomVictim;
+  let showToAll = false;
+  try { showToAll = !!game.settings.get(ID, "ausgrabungShowLeader"); } catch (e) { /* Standard: nur SL */ }
+  if (RV?.pickAndShow) {
+    try {
+      const actor = await RV.pickAndShow(actors, { withMisfortune: false, showToAll });
+      if (actor) return { actor, draw: { n: actors.length, sys: true } };
+    } catch (e) { console.warn(`${ID} | DSA5-Zufallsgenerator nicht nutzbar, eigener Wurf`, e); }
+  }
+  const roll = await new Roll(`1d${actors.length}`).evaluate();
+  await showDice(roll);
+  const actor = actors[roll.total - 1];
+  ui.notifications.info(`Ausgrabung: Das Los fällt auf ${actor?.name}.`);
+  return { actor, draw: { n: actors.length, r: roll.total } };
+}
+
 async function showDice(roll) {
   try {
-    if (game.dice3d?.showForRoll) { await game.dice3d.showForRoll(roll, game.user, true); return; }
+    if (game.dice3d?.showForRoll) { await game.dice3d.showForRoll(roll, game.user, chatPublic()); return; }
     const AH = foundry.audio?.AudioHelper ?? globalThis.AudioHelper;
     AH?.play({ src: CONFIG.sounds.dice, volume: 0.8, autoplay: true, loop: false }, true);
   } catch (e) { /* nur Darstellung */ }
@@ -207,7 +234,8 @@ export function resultHTML(state, last, { buttons = false, sceneId = "" } = {}) 
   if (last.test) h += `<div class="ausg-testbar">Testmodus${last.forced ? ` · festgelegter W20` : ""} · zählt nicht</div>`;
   h += `<header><span class="ausg-tot">${last.tot}</span><div><h3>Abschnitt ${cellName(last.idx)}</h3><div class="ausg-sub">${e(c.terrain)}</div></div></header>`;
   const lead = game.actors.get(last.leaderId)?.name ?? "?";
-  const how = last.draw ? `ausgelost <span class="ausg-die">W${last.draw.n}: ${last.draw.r}</span>` : "von der Spielleitung bestimmt";
+  const how = !last.draw ? "von der Spielleitung bestimmt"
+    : last.draw.r ? `ausgelost <span class="ausg-die">W${last.draw.n}: ${last.draw.r}</span>` : `ausgelost unter ${last.draw.n} Helden`;
   h += `<p class="ausg-lead-line">Leitung: <b>${e(lead)}</b> · ${how}</p>`;
   const lab = Object.fromEntries(RES.map(r => [r.key, r.label]));
   const lacks = (c.lacks ?? []).map(l => `<b class="ausg-badtext">${lab[l.key]} ${l.have} %/${l.need} %</b>`).join(" · ");
@@ -243,8 +271,8 @@ export async function postStoryCard(def, rec, eff, test) {
     + (def.gm ? `<p class="ausg-calc">Nur SL: ${e(def.gm)}</p>` : "")
     + (eff ? `<p class="ausg-cost">Wirkung: ${e(eff)}</p>` : "")
     + (rec.victim ? `<p class="ausg-badtext">Unter den Arbeitern: ${e(rec.victim)}</p>` : "") + `</div>`;
-  await ChatMessage.create({ content: gmContent, whisper: ChatMessage.getWhisperRecipients("GM").map(u => u.id), flags });
-  if (def.public) {
+  await ChatMessage.create({ content: gmContent, whisper: gmWhisper(), flags });
+  if (def.public && chatPublic()) {
     const pub = `<div class="ausg-card ausg-bad">${tb}<header><div><h3>${e(def.title)}</h3><div class="ausg-sub">Auf der Ausgrabung</div></div></header><p>${e(def.public)}</p>`
       + (eff ? `<p class="ausg-cost">${e(eff)}</p>` : "") + (rec.victim ? `<p class="ausg-badtext">Unter den Arbeitern: ${e(rec.victim)}</p>` : "") + `</div>`;
     await ChatMessage.create({ content: pub, flags });
@@ -254,6 +282,7 @@ export async function postStoryCard(def, rec, eff, test) {
 export async function postBreakthroughCard(cell, test) {
   const tb = test ? `<div class="ausg-testbar">Testmodus · zählt nicht</div>` : "";
   await ChatMessage.create({
+    ...chatTarget(),
     flags: { [ID]: { test: !!test } },
     content: `<div class="ausg-card ausg-good">${tb}<header><span class="ausg-tot">✦</span><div><h3>Der Durchbruch</h3><div class="ausg-sub">Abschnitt ${cell}</div></div></header>`
       + `<p>Alles sah nach einem Fehlschlag aus. Doch in den ersten Tagen des Tsamondes stoßen die Arbeiter auf eine Gesteinsschicht: eine frühere, offen liegende Bergflanke, die unter Massen von Sand begraben lag.</p>`
@@ -266,6 +295,7 @@ async function postCard(scene, { state, last }) {
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }),
     content: resultHTML(state, last, { buttons: true, sceneId: scene.id }),
+    ...chatTarget(),
     flags: { [ID]: { digId: last.id, sceneId: scene.id, test: !!last.test } }
   });
 }
@@ -287,6 +317,8 @@ async function ensureMacro() {
 // ---------- Hooks ----------
 Hooks.once("init", () => {
   const reg = (key, name, hint, type, def) => game.settings.register(ID, key, { name, hint, scope: "world", config: true, type, default: def });
+  reg("ausgrabungPublicChat", "Ergebniskarten auch den Spielern zeigen", "Aus: Ergebnisse, Ereignisse und Würfe sieht nur die Spielleitung, die Spieler sehen das aufgedeckte Feld auf der Szene.", Boolean, false);
+  reg("ausgrabungShowLeader", "Ausgelosten Grabungsleiter allen zeigen", "Zeigt das Porträt-Karussell des DSA5-Zufallsgenerators auch den Spielern.", Boolean, false);
   reg("ausgrabungLuckPerStep", "Bonus je Stufe Glück", "Wird zum Ereigniswurf addiert, wenn ein Held mit dem Vorteil Glück die Grabung leitet.", Number, 2);
   reg("ausgrabungBadLuckPerStep", "Abzug je Stufe Pech", "Wird vom Ereigniswurf abgezogen, wenn ein Held mit dem Nachteil Pech die Grabung leitet.", Number, 2);
   reg("ausgrabungNamesLuck", "Name des Vorteils Glück", "Kommagetrennt, falls euer Bogen andere Namen nutzt.", String, "Glück, Luck");
@@ -349,6 +381,13 @@ Hooks.on("updateScene", (scene, diff) => {
   if (foundry.utils.hasProperty(diff, `flags.${ID}`)) refreshApp();
 });
 Hooks.on("updateActor", () => refreshApp());
+// Umschalten privat/öffentlich: Ereignismarken auf der Szene anpassen
+Hooks.on("updateSetting", setting => {
+  if (setting.key === `${ID}.ausgrabungPublicChat` && game.user.isGM) {
+    const sc = findDigScene(); if (sc) syncTiles(sc);
+    refreshApp();
+  }
+});
 Hooks.on("canvasReady", () => {
   buildOverlay();
   refreshApp();

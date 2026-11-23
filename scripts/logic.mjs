@@ -149,6 +149,13 @@ export function generateCells(seed, terrain, keep) {
 }
 
 export function defaultParty() {
+  // bevorzugt die Mitglieder der DSA5-Hauptgruppe (Gruppenbogen), sonst alle Spielercharaktere
+  try {
+    const uuid = game.settings.get("dsa5", "primaryParty");
+    const members = uuid ? fromUuidSync(uuid)?.system?.actors : null;
+    const ids = [...(members ?? [])].map(a => a?.id ?? a).filter(id => game.actors.get(id));
+    if (ids.length) return ids;
+  } catch (e) { /* kein Gruppenbogen */ }
   return game.actors.filter(a => a.type === "character" && a.hasPlayerOwner).map(a => a.id);
 }
 
@@ -431,7 +438,7 @@ export async function gmDig(scene, { idx: i, leaderId, d20: rolled, userId, draw
     tot: d20 + mods.reduce((a, m) => a + m.v, 0),
     cost: { days: cost.days, wage: cost.wage, terrain: cost.t.name, lacks: cost.lacks, wheel: wheelBroken(state) },
     key, rock, rerolled: null, userId, test, forced, insight: null,
-    draw: draw && Number(draw.n) > 0 && Number(draw.r) > 0 ? { n: Number(draw.n), r: Number(draw.r) } : null,
+    draw: draw && Number(draw.n) > 0 ? { n: Number(draw.n), r: Number(draw.r) || null, sys: !!draw.sys } : null,
     snap: null
   };
   last.snap = { run: clone(state.run), finds: clone(state.finds) };

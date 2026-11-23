@@ -84,7 +84,9 @@ export async function syncTiles(scene, state = getState(scene)) {
       const b = Math.round(s * 0.34);
       k = `spur:${i}:${h}`; want.set(k, tileData(k, `${ASSETS}/tiles/spur-${h}.webp`, x + s - b - 4, y + 4, b, b, 4));
     }
-    if (c.event === "good" || c.event === "bad") {
+    let showEvents = false;
+    try { showEvents = !!game.settings.get(ID, "ausgrabungPublicChat"); } catch (e) { /* Standard: privat */ }
+    if (showEvents && (c.event === "good" || c.event === "bad")) {
       const b = Math.round(s * 0.28);
       const src = `${ASSETS}/tiles/ereignis-${c.event === "good" ? "gut" : "schlecht"}.webp`;
       k = `ereignis:${i}:${c.event}`; want.set(k, tileData(k, src, x + 4, y + s - b - 4, b, b, 4));

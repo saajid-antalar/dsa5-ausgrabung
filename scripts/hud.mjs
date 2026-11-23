@@ -1,7 +1,7 @@
 // Kleines Übersichtsfenster für die Spieler: Versorgung, Abschnitt, Leitung, Funde.
 import { ID, getState, RES, resources, supplyMod, wheelBroken, offerCost, cellName, partyProfiles, STATE_VERSION } from "./logic.mjs";
 import { findDigScene } from "./scene.mjs";
-import { resultHTML, setPicking, isPicking } from "./main.mjs";
+import { resultHTML, setPicking, isPicking, chatPublic } from "./main.mjs";
 
 let HudClass = null;
 export class AusgrabungHud {
@@ -47,9 +47,10 @@ function buildHud() {
                wheelBroken(state) ? `Förderrad steht noch ${state.run.wheelUntil - state.run.day} Tage still.` : ""].filter(Boolean),
         insight: state.run.insight, breakthrough: state.run.breakthrough,
         lead: lead ? { name: lead.name, luck: lead.luck > 0 ? `Glück, +${lead.luck}` : lead.luck < 0 ? `Pech, ${lead.luck}` : "" } : null,
-        last: state.last ? resultHTML(state, state.last) : "",
+        // Ergebnisse sieht nur die Spielleitung, solange die Karten privat sind
+        last: chatPublic() && state.last ? resultHTML(state, state.last) : "",
         finds: state.finds,
-        log: state.log.filter(l => !l.gm).slice(0, 8)
+        log: state.log.filter(l => !l.gm).slice(0, 8).map(l => chatPublic() ? l : { ...l, text: String(l.text).split(" · ")[0] })
       };
     }
   };

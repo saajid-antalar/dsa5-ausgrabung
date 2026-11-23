@@ -14,11 +14,15 @@ Danach das Modul in der Welt aktivieren. Die Spielleitung öffnet über das Kell
 
 ## Ablauf am Tisch
 
-Auf der Grabungsszene sind alle abgesteckten Felder **direkt anklickbar**. Ein Klick auf ein Feld fragt kurz nach („Abschnitt E4 graben?“), lost dann im Chat unter den Helden vor Ort aus, wer den Abschnitt leitet, würfelt den Ereigniswurf mit Glück oder Pech dieses Helden und deckt das Feld auf: Die abgesteckte Kachel verwandelt sich in das, was darunter lag. Die Spielleitung kann die Leitung für den nächsten Abschnitt auch festlegen statt auszulosen.
+Auf der Grabungsszene sind alle abgesteckten Felder **direkt anklickbar**. Ein Klick fragt kurz nach („Abschnitt E4 graben?“) und schickt die Anfrage an die Spielleitung. Auf deren Rechner wird die Grabungsleitung mit dem **Zufallsgenerator des DSA5-Gruppenbogens** (Porträt-Karussell) unter den Helden vor Ort ausgelost, der Ereigniswurf gewürfelt und das Feld aufgedeckt: Die abgesteckte Kachel verwandelt sich in das, was darunter lag. Die Spielleitung kann die Leitung für den nächsten Abschnitt auch festlegen statt auszulosen.
+
+**Ergebnisse sieht nur die Spielleitung:** Ergebniskarten, Ereignisse und Würfe werden ihr zugeflüstert, die Spieler sehen das aufgedeckte Feld und erfahren den Rest aus der Erzählung. In den Moduleinstellungen lässt sich das öffnen („Ergebniskarten auch den Spielern zeigen“, „Ausgelosten Grabungsleiter allen zeigen“).
+
+Als Heldengruppe nimmt das Modul standardmäßig die Mitglieder der DSA5-Hauptgruppe; im Reiter *Spielleitung* änderbar.
 
 Wer Tokens auf dem Grabungsfeld bewegen will, pausiert die Feldwahl über den Schalter in der Token-Leiste oder im Übersichtsfenster.
 
-Spieler sehen ein kleines **Übersichtsfenster** (öffnet sich auf der Grabungsszene von selbst): Versorgung, Tag, Warnungen, letztes Ergebnis, Funde und Grabungsbuch. Die Spielleitung hat ein großes Fenster: im Reiter *Grabung* Versorgung, Leitung, Helden vor Ort (nur für sie sichtbar), Funde und Grabungsbuch; im Reiter *Spielleitung* Plan zum Einrichten, Beschaffung, Ereignisse, Durchbruch und Testmodus.
+Spieler sehen ein kleines **Übersichtsfenster** (öffnet sich auf der Grabungsszene von selbst): Versorgung, Tag, Warnungen, Funde und ein knappes Grabungsbuch. Die Spielleitung hat ein großes Fenster: im Reiter *Grabung* Versorgung, Leitung, Helden vor Ort, letztes Ergebnis, Funde und Grabungsbuch; im Reiter *Spielleitung* Plan zum Einrichten, Beschaffung, Ereignisse, Durchbruch und Testmodus.
 
 ## Versorgung (S. 34–36)
 
