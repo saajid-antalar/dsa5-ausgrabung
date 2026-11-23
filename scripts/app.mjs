@@ -30,7 +30,8 @@ function buildClass() {
       window: { title: "Die Ausgrabung", icon: "fa-solid fa-trowel", resizable: true },
       position: { width: 980, height: 820 },
       actions: {
-        tab: function (ev, t) { this.tab = t.dataset.tab; this.render(); },
+        // nicht "tab" nennen: ApplicationV2 belegt diese Aktion selbst (Tab-Gruppen)
+        ausgTab: function (ev, t) { this.tab = t.dataset.ausgTab; this.render(); },
         cell: function (ev, t) { this._onCell(Number(t.dataset.idx)); },
         pick: function () {
           if (canvas?.scene?.id !== this.scene?.id) return ui.notifications.warn("Bitte zuerst die Grabungsszene ansehen.");

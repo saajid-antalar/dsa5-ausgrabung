@@ -16,8 +16,8 @@
   </section>
 {{else}}
   <nav class="ausg-tabs">
-    <button type="button" data-action="tab" data-tab="spiel" class="{{#unless gmTab}}active{{/unless}}">Grabung</button>
-    {{#if isGM}}<button type="button" data-action="tab" data-tab="leitung" class="{{#if gmTab}}active{{/if}}">Spielleitung</button>{{/if}}
+    <button type="button" data-action="ausgTab" data-ausg-tab="spiel" class="{{#unless gmTab}}active{{/unless}}">Grabung</button>
+    {{#if isGM}}<button type="button" data-action="ausgTab" data-ausg-tab="leitung" class="{{#if gmTab}}active{{/if}}">Spielleitung</button>{{/if}}
     {{#unless onScene}}<button type="button" data-action="viewScene" class="ausg-goto"><i class="fa-solid fa-map-location-dot"></i> Zur Grabungsszene</button>{{/unless}}
   </nav>
 
