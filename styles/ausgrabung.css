@@ -73,7 +73,7 @@
 .dsa-ausgrabung .chip.good { color: var(--ausg-lapis); }
 .dsa-ausgrabung .chip.bad { color: var(--ausg-ochre); }
 .dsa-ausgrabung .chip.neu { color: var(--ausg-verd); }
-.dsa-ausgrabung .schip { font-size: .85em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dsa-ausgrabung .ausg-schip { font-size: .85em; white-space: nowrap; font-variant-numeric: tabular-nums; align-self: center; justify-self: end; padding-right: 2px; }
 
 .dsa-ausgrabung .ausg-log { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow: auto; font-size: .88em; }
 .dsa-ausgrabung .ausg-log li { padding: 3px 0; border-bottom: 1px dotted rgba(58,42,26,.35); }
