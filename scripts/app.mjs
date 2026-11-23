@@ -173,7 +173,12 @@ function buildClass() {
         ctx.shift = { dx: Number(sh.dx) || 0, dy: Number(sh.dy) || 0 };
         ctx.terrain = state.terrain.map((t, i) => ({ ...t, i }));
         ctx.funde = state.funde.map(k => ({ ...k, name: cellName(k.idx) })).sort((a, b) => a.idx - b.idx);
-        ctx.actors = game.actors.filter(a => a.type === "character").map(a => ({ id: a.id, name: a.name, inParty: state.party.includes(a.id) }));
+        // Helden = Spielercharaktere oder schon in der Gruppe; übrige Charakterbögen (Orte, Buchhaltung …) aufklappbar
+        const chars = game.actors.filter(a => a.type === "character")
+          .map(a => ({ id: a.id, name: a.name, inParty: state.party.includes(a.id), hero: a.hasPlayerOwner || state.party.includes(a.id) }))
+          .sort((a, b) => a.name.localeCompare(b.name, "de"));
+        ctx.actors = chars.filter(a => a.hero);
+        ctx.otherActors = chars.filter(a => !a.hero);
         ctx.paint = [["area", "Grabungsbereich"], ["out", "Gesperrt (Fels)"], ["fund", "Fundstelle ✦"], ["fluss", "Flussbett ≈"], ["portal", "Portal ⌂"], ["terrain", "Gelände wechseln"]]
           .map(([mode, label]) => ({ mode, label, active: this.paint === mode }));
         ctx.offers = OFFERS.map(o => ({ ...o, fx: fx(o.res), taken: !!state.offers[o.id], cost: state.offers[o.id]?.cost ?? o.cost }));

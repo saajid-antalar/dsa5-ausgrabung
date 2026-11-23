@@ -274,8 +274,16 @@
       <div class="ausg-panel">
         <h2>Heldengruppe</h2>
         <div class="ausg-checks">
-          {{#each actors}}<label><input type="checkbox" data-party="{{id}}" {{#if inParty}}checked{{/if}}> {{name}}</label>{{/each}}
+          {{#each actors}}<label class="ausg-check"><input type="checkbox" data-party="{{id}}" {{#if inParty}}checked{{/if}}><span>{{name}}</span></label>{{/each}}
         </div>
+        {{#if otherActors.length}}
+        <details class="ausg-more">
+          <summary>Weitere Charakterbögen ohne Spieler ({{otherActors.length}})</summary>
+          <div class="ausg-checks">
+            {{#each otherActors}}<label class="ausg-check"><input type="checkbox" data-party="{{id}}"><span>{{name}}</span></label>{{/each}}
+          </div>
+        </details>
+        {{/if}}
       </div>
 
     {{else}}
