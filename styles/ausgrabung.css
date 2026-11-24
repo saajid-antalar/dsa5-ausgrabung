@@ -240,3 +240,7 @@
   .dsa-ausgrabung .ausg-gm .ausg-right, .dsa-ausgrabung .ausg-offergrid { grid-template-columns: 1fr; }
   .dsa-ausgrabung .ausg-storycols { grid-template-columns: 1fr; }
 }
+
+/* Freigabe für Spieler */
+.dsa-ausgrabung .ausg-unlock { padding: 6px 8px; margin: 2px 0 8px; border: 1px solid #a33a2a; background: rgba(163, 58, 42, .08); }
+.dsa-ausgrabung .ausg-unlock.on { border-color: #3d6b35; background: rgba(61, 107, 53, .1); }

@@ -15,10 +15,32 @@ import { DigOverlay } from "./overlay.mjs";
 const SOCKET = `module.${ID}`;
 let app = null, hud = null, overlay = null, picking = false;
 
+/** Dürfen Spieler die Ausgrabung sehen und benutzen? Die Spielleitung immer. */
+export function playersEnabled() {
+  return game.user.isGM || !!game.settings.get(ID, "ausgrabungPlayersEnabled");
+}
+function openFor(user) {
+  return user?.isGM || !!game.settings.get(ID, "ausgrabungPlayersEnabled");
+}
+
 /** Spielleitung: großes Fenster. Spieler: kleine Übersicht. */
 export function openApp() {
   if (game.user.isGM) { app ??= new AusgrabungApp(); app.render({ force: true }); return app; }
+  if (!playersEnabled()) return ui.notifications.info("Die Ausgrabung ist noch nicht freigegeben.");
   return openHud();
+}
+
+/** Freigabe geändert: Leiste, Szene, Fenster und Makro auf allen Clients anpassen. */
+async function onPlayersEnabledChange(on) {
+  if (!game.user.isGM && !on) {
+    if (picking) setPicking(false);
+    if (hud?.rendered) hud.close();
+  }
+  try { ui.controls?.render({ reset: true }); } catch (e) { ui.controls?.render(); }
+  overlay?.refresh();
+  if (!game.user.isGM && on && isDigScene(canvas?.scene)) { setPicking(true); openHud(); }
+  if (game.user.isGM && game.users.activeGM?.isSelf) await ensureMacro();
+  if (app?.rendered) app.render();
 }
 export function openHud() {
   hud ??= new AusgrabungHud();
@@ -34,6 +56,7 @@ function refreshApp() {
 // ---------- Feldwahl auf der Szene ----------
 export function isPicking() { return picking; }
 export function setPicking(on) {
+  if (on && !playersEnabled()) on = false;
   if (on && !isDigScene(canvas?.scene)) { ui.notifications.warn("Die Feldwahl geht nur auf der Grabungsszene."); on = false; }
   picking = !!on;
   overlay?.setPicking(picking);
@@ -82,7 +105,7 @@ async function confirmDig(name, preset) {
 function buildOverlay() {
   overlay?.destroy(); overlay = null;
   if (!isDigScene(canvas?.scene)) { picking = false; return; }
-  picking = true;   // auf der Grabungsszene sind die Felder sofort klickbar
+  picking = playersEnabled();   // auf der Grabungsszene sind die Felder sofort klickbar, sobald freigegeben
   try {
     overlay = new DigOverlay(canvas.scene, pickCell);
     overlay.setPicking(picking);
@@ -111,6 +134,8 @@ async function handleNow(action, p) {
   const scene = game.scenes.get(p.sceneId);
   if (!scene) return;
   const user = game.users.get(p.userId);
+  // Gesperrt: Spieler dürfen nichts auslösen (außer Rückmeldungen zu einer angeforderten Probe)
+  if (!openFor(user) && !["probeRevise", "probeResult", "probeStatus"].includes(action)) return;
   try {
     if (action === "dig") {
       const s = getState(scene);
@@ -431,18 +456,29 @@ async function ensureMacro() {
   const name = "⛏️ Ausgrabung";
   const command = `game.modules.get("${ID}")?.api?.ausgrabung?.open();`;
   const img = `modules/${ID}/assets/kelle.svg`;
-  const observer = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
+  // Spieler sehen das Makro erst, wenn die Ausgrabung freigegeben ist
+  const L = CONST.DOCUMENT_OWNERSHIP_LEVELS;
+  const level = game.settings.get(ID, "ausgrabungPlayersEnabled") ? L.OBSERVER : L.NONE;
   const existing = game.macros.getName(name);
   if (existing) {
-    if (existing.command !== command || existing.img !== img) await existing.update({ command, img, type: "script" });
+    const upd = {};
+    if (existing.command !== command || existing.img !== img) Object.assign(upd, { command, img, type: "script" });
+    if (existing.ownership?.default !== level) upd["ownership.default"] = level;
+    if (Object.keys(upd).length) await existing.update(upd);
     return;
   }
-  await Macro.create({ name, type: "script", scope: "global", img, command, ownership: { default: observer } });
+  await Macro.create({ name, type: "script", scope: "global", img, command, ownership: { default: level } });
 }
 
 // ---------- Hooks ----------
 Hooks.once("init", () => {
   const reg = (key, name, hint, type, def) => game.settings.register(ID, key, { name, hint, scope: "world", config: true, type, default: def });
+  game.settings.register(ID, "ausgrabungPlayersEnabled", {
+    name: "Ausgrabung für Spieler freigeben",
+    hint: "Aus: Spieler sehen weder die Werkzeuge in der Leiste noch das Makro, und Felder auf der Szene lassen sich nicht anklicken. Die Spielleitung sieht alles immer.",
+    scope: "world", config: true, type: Boolean, default: false,
+    onChange: v => onPlayersEnabledChange(v)
+  });
   reg("ausgrabungPublicChat", "Ergebniskarten auch den Spielern zeigen", "Aus: Ergebnisse, Ereignisse und Würfe sieht nur die Spielleitung, die Spieler sehen das aufgedeckte Feld auf der Szene.", Boolean, false);
   reg("ausgrabungShowLeader", "Ausgelosten Grabungsleiter allen zeigen", "Zeigt das Porträt-Karussell des DSA5-Zufallsgenerators auch den Spielern.", Boolean, false);
   reg("ausgrabungLuckPerStep", "Bonus je Stufe Glück", "Wird zum Ereigniswurf addiert, wenn ein Held mit dem Vorteil Glück die Grabung leitet.", Number, 2);
@@ -484,7 +520,7 @@ Hooks.once("ready", async () => {
 
 Hooks.on("getSceneControlButtons", controls => {
   const tokens = controls?.tokens ?? controls?.token;
-  if (!tokens?.tools) return;
+  if (!tokens?.tools || !playersEnabled()) return;   // gesperrt: Spieler bekommen gar keine Werkzeuge
   const order = Object.keys(tokens.tools).length;
   tokens.tools.ausgrabungFeld = {
     name: "ausgrabungFeld",
@@ -528,7 +564,7 @@ Hooks.on("canvasReady", () => {
       .catch(e => console.warn(`${ID} | Kachelabgleich`, e));
   }
   // Spieler bekommen auf der Grabungsszene automatisch die Übersicht
-  if (!game.user.isGM && isDigScene(canvas.scene)) openHud();
+  if (!game.user.isGM && playersEnabled() && isDigScene(canvas.scene)) openHud();
 });
 Hooks.on("canvasTearDown", () => { overlay?.destroy(); overlay = null; });
 

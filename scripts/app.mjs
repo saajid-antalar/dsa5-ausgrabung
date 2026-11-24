@@ -156,6 +156,7 @@ function buildClass() {
         board,
         leaderOptions: present.map(h => ({ id: h.id, name: h.name, selected: h.id === state.leader && state.leaderFor === -1, note: h.luck > 0 ? "Glück" : h.luck < 0 ? "Pech" : "" })),
         picking: isPicking(),
+        playersEnabled: !!game.settings.get(ID, "ausgrabungPlayersEnabled"),
         heroes, noHeroes: !heroes.length,
         last: state.last ? resultHTML(state, state.last) : "",
         finds: state.finds,
@@ -209,6 +210,8 @@ function buildClass() {
       el.querySelectorAll("[data-present]").forEach(cb => cb.addEventListener("change", ev =>
         request("present", { sceneId: this.scene.id, actorId: cb.dataset.present, present: ev.target.checked })));
       if (!game.user.isGM) return;
+      el.querySelector("[data-players-enabled]")?.addEventListener("change", ev =>
+        game.settings.set(ID, "ausgrabungPlayersEnabled", ev.currentTarget.checked));
       el.querySelectorAll("[data-setting]").forEach(inp => inp.addEventListener("change", () =>
         this._gmEdit(s => { s.settings[inp.dataset.setting] = Number(inp.value) || 0; })));
       el.querySelectorAll("[data-shift]").forEach(inp => inp.addEventListener("change", async () => {

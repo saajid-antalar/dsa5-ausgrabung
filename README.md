@@ -14,6 +14,8 @@ Danach das Modul in der Welt aktivieren. Die Spielleitung öffnet über das Kell
 
 ## Ablauf am Tisch
 
+**Freigabe für Spieler:** Nach der Installation ist die Ausgrabung für Spieler gesperrt. Sie sehen weder die Werkzeuge in der Leiste noch das Makro „⛏️ Ausgrabung“, und Felder auf der Szene lassen sich nicht anklicken. Freigeben lässt sie sich im Fenster der Spielleitung (Reiter „Grabung“, Abschnitt „Graben“) oder in den Moduleinstellungen. Ein Spieler-Client reagiert sofort, ohne neu zu laden.
+
 Auf der Grabungsszene sind alle abgesteckten Felder **direkt anklickbar**. Ein Klick fragt kurz nach („Abschnitt E4 graben?“) und schickt die Anfrage an die Spielleitung. Auf deren Rechner wird die Grabungsleitung mit dem **Zufallsgenerator des DSA5-Gruppenbogens** (Porträt-Karussell) unter den Helden vor Ort ausgelost, der Ereigniswurf gewürfelt und das Feld aufgedeckt: Die abgesteckte Kachel verwandelt sich in das, was darunter lag. Die Spielleitung kann die Leitung für den nächsten Abschnitt auch festlegen statt auszulosen.
 
 **Ergebnisse sieht nur die Spielleitung:** Ergebniskarten, Ereignisse und Würfe werden ihr zugeflüstert, die Spieler sehen das aufgedeckte Feld und erfahren den Rest aus der Erzählung. In den Moduleinstellungen lässt sich das öffnen („Ergebniskarten auch den Spielern zeigen“, „Ausgelosten Grabungsleiter allen zeigen“).
