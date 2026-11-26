@@ -536,8 +536,11 @@ Hooks.on("getSceneControlButtons", controls => {
     order: Object.keys(controls).length,
     layer: "drachenchronik",
     visible: true,
-    activeTool: "ausgrabung",
-    tools: {}
+    activeTool: "drachenchronikSelect",
+    tools: {
+      // neutrales Werkzeug ohne Aktion: Foundry löst das aktive Werkzeug beim Betreten/Verlassen der Kategorie aus
+      drachenchronikSelect: { name: "drachenchronikSelect", title: "Auswählen", icon: "fa-solid fa-expand", order: 0, button: true, visible: true }
+    }
   };
   const n = Object.keys(cat.tools).length;
   cat.tools.ausgrabung = {
