@@ -2,7 +2,7 @@
   "id": "dsa5-ausgrabung",
   "title": "DSA5 – Die Ausgrabung",
   "description": "Grabungsspiel für Das Schwarze Auge 5 nach der Drachenchronik I: Versorgung über die sechs Ressourcen des Abenteuers mit den Angeboten aus dem Band, Grabungsplan mit verdecktem Flussbett, Fundstellen und Portal, Ereignisse von Pargonus und Rohul, fester Durchbruch. Glück, Pech, Pechmagnet, Anführer, Spürsinn und Schicksalspunkte kommen aus den Heldenbögen, gewürfelt wird online im Chat. Mit Testmodus.",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "authors": [
     {
       "name": "Sven"
@@ -30,5 +30,5 @@
   "socket": true,
   "url": "https://github.com/saajid-antalar/dsa5-ausgrabung",
   "manifest": "https://raw.githubusercontent.com/saajid-antalar/dsa5-ausgrabung/main/module.json",
-  "download": "https://github.com/saajid-antalar/dsa5-ausgrabung/releases/download/v1.6.0/dsa5-ausgrabung-1.6.0.zip"
+  "download": "https://github.com/saajid-antalar/dsa5-ausgrabung/releases/download/v1.7.0/dsa5-ausgrabung-1.7.0.zip"
 }

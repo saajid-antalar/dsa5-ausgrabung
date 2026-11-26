@@ -61,7 +61,7 @@ export function setPicking(on) {
   picking = !!on;
   overlay?.setPicking(picking);
   try {
-    const tool = ui.controls?.controls?.tokens?.tools?.ausgrabungFeld;
+    const tool = ui.controls?.controls?.drachenchronik?.tools?.ausgrabungFeld;
     if (tool && tool.active !== picking) { tool.active = picking; ui.controls.render(); }
   } catch (e) { /* Werkzeugleiste ist nur Anzeige */ }
   if (hud?.rendered) hud.render();
@@ -472,6 +472,7 @@ async function ensureMacro() {
 
 // ---------- Hooks ----------
 Hooks.once("init", () => {
+  CONFIG.Canvas.layers.drachenchronik ??= { layerClass: DrachenchronikLayer, group: "interface" };
   const reg = (key, name, hint, type, def) => game.settings.register(ID, key, { name, hint, scope: "world", config: true, type, default: def });
   game.settings.register(ID, "ausgrabungPlayersEnabled", {
     name: "Ausgrabung für Spieler freigeben",
@@ -518,28 +519,45 @@ Hooks.once("ready", async () => {
   }
 });
 
+/** Eigene, leere Ebene für die Hauptkategorie „Drachenchronik“ in der linken Leiste (Muster wie das DSA5-Menü). */
+class DrachenchronikLayer extends foundry.canvas.layers.InteractionLayer {
+  static get layerOptions() {
+    return foundry.utils.mergeObject(super.layerOptions, { name: "drachenchronik", canDragCreate: false, zIndex: 667 });
+  }
+}
+
 Hooks.on("getSceneControlButtons", controls => {
-  const tokens = controls?.tokens ?? controls?.token;
-  if (!tokens?.tools || !playersEnabled()) return;   // gesperrt: Spieler bekommen gar keine Werkzeuge
-  const order = Object.keys(tokens.tools).length;
-  tokens.tools.ausgrabungFeld = {
+  if (!controls || !playersEnabled()) return;   // gesperrt: Spieler bekommen die Kategorie gar nicht
+  // Gemeinsame Kategorie; andere Drachenchronik-Module können ihre Werkzeuge hier dazulegen
+  const cat = controls.drachenchronik ??= {
+    name: "drachenchronik",
+    title: "Drachenchronik",
+    icon: "ausg-drachenkopf",
+    order: Object.keys(controls).length,
+    layer: "drachenchronik",
+    visible: true,
+    activeTool: "ausgrabung",
+    tools: {}
+  };
+  const n = Object.keys(cat.tools).length;
+  cat.tools.ausgrabung = {
+    name: "ausgrabung",
+    title: game.user.isGM ? "Die Ausgrabung (Spielleitung)" : "Übersicht der Ausgrabung",
+    icon: "fa-solid fa-trowel",
+    order: n,
+    button: true,
+    visible: true,
+    onChange: () => openApp()
+  };
+  cat.tools.ausgrabungFeld = {
     name: "ausgrabungFeld",
     title: "Grabungsfelder anklickbar (ausschalten, um Tokens auf dem Feld zu bewegen)",
     icon: "fa-solid fa-trowel-bricks",
-    order,
+    order: n + 1,
     toggle: true,
     active: picking,
     visible: true,
     onChange: (event, active) => setPicking(active)
-  };
-  tokens.tools.ausgrabung = {
-    name: "ausgrabung",
-    title: game.user.isGM ? "Die Ausgrabung (Spielleitung)" : "Übersicht der Ausgrabung",
-    icon: "fa-solid fa-trowel",
-    order: order + 1,
-    button: true,
-    visible: true,
-    onChange: () => openApp()
   };
 });
 
