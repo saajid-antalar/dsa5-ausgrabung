@@ -245,9 +245,9 @@
 .dsa-ausgrabung .ausg-unlock { padding: 6px 8px; margin: 2px 0 8px; border: 1px solid #a33a2a; background: rgba(163, 58, 42, .08); }
 .dsa-ausgrabung .ausg-unlock.on { border-color: #3d6b35; background: rgba(61, 107, 53, .1); }
 
-/* Hauptkategorie „Drachenchronik“ in der linken Leiste: Drachenkopf als runde Plakette (Graustufen) */
+/* Hauptkategorie „Drachenchronik“ in der linken Leiste: Drachenkopf (Logo, freigestellt) */
 .ausg-drachenkopf { position: relative; }
 .ausg-drachenkopf::before {
-  content: ""; position: absolute; inset: 6%;
+  content: ""; position: absolute; inset: 8%;
   background: url("../assets/drachenkopf.webp") center / contain no-repeat;
 }
