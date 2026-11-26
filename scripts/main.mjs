@@ -33,12 +33,13 @@ export function openApp() {
 /** Freigabe geändert: Leiste, Szene, Fenster und Makro auf allen Clients anpassen. */
 async function onPlayersEnabledChange(on) {
   if (!game.user.isGM && !on) {
-    if (picking) setPicking(false);
+    if (controlActive()) await setPicking(false);
     if (hud?.rendered) hud.close();
   }
   try { ui.controls?.render({ reset: true }); } catch (e) { ui.controls?.render(); }
   overlay?.refresh();
-  if (!game.user.isGM && on && isDigScene(canvas?.scene)) { setPicking(true); openHud(); }
+  syncPicking();
+  if (!game.user.isGM && on && isDigScene(canvas?.scene)) { await setPicking(true); openHud(); }
   if (game.user.isGM && game.users.activeGM?.isSelf) await ensureMacro();
   if (app?.rendered) app.render();
 }
@@ -54,19 +55,30 @@ function refreshApp() {
 }
 
 // ---------- Feldwahl auf der Szene ----------
+// Die Feldwahl hängt an der Leiste: Kategorie „Drachenchronik“ aktiv = Felder anklickbar,
+// jede andere Kategorie (z. B. Figuren-Steuerung) = Felder durchlässig, Tokens frei beweglich.
 export function isPicking() { return picking; }
-export function setPicking(on) {
-  if (on && !playersEnabled()) on = false;
-  if (on && !isDigScene(canvas?.scene)) { ui.notifications.warn("Die Feldwahl geht nur auf der Grabungsszene."); on = false; }
-  picking = !!on;
+function controlActive() {
+  try { return (ui.controls?.control?.name ?? ui.controls?.activeControl) === "drachenchronik"; } catch (e) { return false; }
+}
+/** Zustand aus der aktiven Kategorie ableiten und anwenden. */
+function syncPicking() {
+  const on = playersEnabled() && isDigScene(canvas?.scene) && controlActive();
+  if (on === picking) return;
+  picking = on;
   overlay?.setPicking(picking);
-  try {
-    const tool = ui.controls?.controls?.drachenchronik?.tools?.ausgrabungFeld;
-    if (tool && tool.active !== picking) { tool.active = picking; ui.controls.render(); }
-  } catch (e) { /* Werkzeugleiste ist nur Anzeige */ }
   if (hud?.rendered) hud.render();
   if (app?.rendered) app.render();
 }
+/** Zum Graben wechseln (an) bzw. zurück zur Figuren-Steuerung (aus). */
+export async function setPicking(on) {
+  if (on && !playersEnabled()) return;
+  if (on && !isDigScene(canvas?.scene)) return ui.notifications.warn("Die Feldwahl geht nur auf der Grabungsszene.");
+  try { await ui.controls?.activate({ control: on ? "drachenchronik" : "tokens" }); }
+  catch (e) { console.warn(`${ID} | Leiste umschalten`, e); }
+  syncPicking();
+}
+Hooks.on("renderSceneControls", () => syncPicking());
 function pickCell(i) {
   digAt(canvas.scene, i);
 }
@@ -105,7 +117,7 @@ async function confirmDig(name, preset) {
 function buildOverlay() {
   overlay?.destroy(); overlay = null;
   if (!isDigScene(canvas?.scene)) { picking = false; return; }
-  picking = playersEnabled();   // auf der Grabungsszene sind die Felder sofort klickbar, sobald freigegeben
+  picking = playersEnabled() && controlActive();
   try {
     overlay = new DigOverlay(canvas.scene, pickCell);
     overlay.setPicking(picking);
@@ -552,16 +564,6 @@ Hooks.on("getSceneControlButtons", controls => {
     visible: true,
     onChange: () => openApp()
   };
-  cat.tools.ausgrabungFeld = {
-    name: "ausgrabungFeld",
-    title: "Grabungsfelder anklickbar (ausschalten, um Tokens auf dem Feld zu bewegen)",
-    icon: "fa-solid fa-trowel-bricks",
-    order: n + 1,
-    toggle: true,
-    active: picking,
-    visible: true,
-    onChange: (event, active) => setPicking(active)
-  };
 });
 
 Hooks.on("updateScene", (scene, diff) => {
@@ -584,8 +586,11 @@ Hooks.on("canvasReady", () => {
     syncTiles(sc).then(() => new Promise(r => setTimeout(r, 800))).then(() => calibrateTiles(sc))
       .catch(e => console.warn(`${ID} | Kachelabgleich`, e));
   }
-  // Spieler bekommen auf der Grabungsszene automatisch die Übersicht
-  if (!game.user.isGM && playersEnabled() && isDigScene(canvas.scene)) openHud();
+  // Auf der Grabungsszene gleich in die Kategorie „Drachenchronik“ wechseln, Spieler bekommen die Übersicht
+  if (playersEnabled() && isDigScene(canvas.scene)) {
+    setTimeout(() => setPicking(true), 300);
+    if (!game.user.isGM) openHud();
+  } else syncPicking();
 });
 Hooks.on("canvasTearDown", () => { overlay?.destroy(); overlay = null; });
 

@@ -25,11 +25,10 @@
       {{else}}
         {{#if picking}}
           <p class="ausg-hud-sel">Klickt auf der Karte auf ein abgestecktes Feld, um es zu graben.</p>
-          <p class="ausg-muted">Die Spielleitung lost die Grabungsleitung aus und erzählt, was ihr findet. Glück oder Pech des Leiters zählt für den Wurf.</p>
-          <button type="button" data-action="pick"><i class="fa-solid fa-pause"></i> Feldwahl pausieren (Tokens bewegen)</button>
+          <p class="ausg-muted">Die Spielleitung lost die Grabungsleitung aus und erzählt, was ihr findet. Glück oder Pech des Leiters zählt für den Wurf. Um Tokens zu bewegen, links die Figuren-Steuerung wählen.</p>
         {{else}}
-          <p class="ausg-muted">Die Feldwahl ist pausiert, Tokens lassen sich frei bewegen.</p>
-          <button type="button" data-action="pick" class="primary"><i class="fa-solid fa-trowel"></i> Feldwahl fortsetzen</button>
+          <p class="ausg-muted">Zum Graben links in der Leiste den Drachenkopf (Drachenchronik) wählen.</p>
+          <button type="button" data-action="pick" class="primary"><i class="fa-solid fa-trowel"></i> Zum Graben wechseln</button>
         {{/if}}
       {{/unless}}
       {{#if lead}}<p>Nächste Leitung (von der Spielleitung bestimmt): <b>{{lead.name}}</b>{{#if lead.luck}} <span class="ausg-muted">({{lead.luck}})</span>{{/if}}</p>{{/if}}

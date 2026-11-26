@@ -36,7 +36,7 @@ function buildClass() {
         cell: function (ev, t) { this._onCell(Number(t.dataset.idx)); },
         pick: function () {
           if (canvas?.scene?.id !== this.scene?.id) return ui.notifications.warn("Bitte zuerst die Grabungsszene ansehen.");
-          setPicking(!isPicking());
+          setPicking(true);
         },
         paint: function (ev, t) { this.paint = t.dataset.mode; this.render(); },
         createScene: async function () { await createDigScene(); this.render(); },

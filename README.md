@@ -22,7 +22,7 @@ Auf der Grabungsszene sind alle abgesteckten Felder **direkt anklickbar**. Ein K
 
 Als Heldengruppe nimmt das Modul standardmäßig die Mitglieder der DSA5-Hauptgruppe; im Reiter *Spielleitung* änderbar.
 
-Wer Tokens auf dem Grabungsfeld bewegen will, pausiert die Feldwahl über den Schalter in der Token-Leiste oder im Übersichtsfenster.
+Die Felder sind anklickbar, solange links die Kategorie **„Drachenchronik“** (Drachenkopf) aktiv ist; auf der Grabungsszene wird sie beim Laden automatisch gewählt. Wer Tokens bewegen will, wechselt wie gewohnt in die Figuren-Steuerung, dann sind die Felder durchlässig.
 
 Spieler sehen ein kleines **Übersichtsfenster** (öffnet sich auf der Grabungsszene von selbst): Versorgung, Tag, Warnungen, Funde und ein knappes Grabungsbuch. Die Spielleitung hat ein großes Fenster: im Reiter *Grabung* Versorgung, Leitung, Helden vor Ort, letztes Ergebnis, Funde und Grabungsbuch; im Reiter *Spielleitung* Plan zum Einrichten, Beschaffung, Ereignisse, Durchbruch und Testmodus.
 

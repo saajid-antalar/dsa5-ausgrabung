@@ -90,10 +90,10 @@
       <div class="ausg-panel">
         <h2>Graben</h2>
         <label class="ausg-check ausg-unlock {{#if playersEnabled}}on{{/if}}"><input type="checkbox" data-players-enabled {{#if playersEnabled}}checked{{/if}}><span>{{#if playersEnabled}}<b>Für Spieler freigegeben</b>: Werkzeuge, Makro und Feldwahl sichtbar{{else}}<b>Für Spieler gesperrt</b>: keine Werkzeuge, kein Makro, keine Feldwahl{{/if}}</span></label>
-        <p class="ausg-muted">Gegraben wird per Klick auf ein abgestecktes Feld der Szene. Nach einer Rückfrage wird die Leitung ausgelost, gewürfelt und das Feld aufgedeckt.</p>
-        <div class="ausg-row">
-          <button type="button" data-action="pick" class="{{#unless picking}}primary{{/unless}}"><i class="fa-solid {{#if picking}}fa-pause{{else}}fa-trowel{{/if}}"></i> {{#if picking}}Feldwahl pausieren{{else}}Feldwahl fortsetzen{{/if}}</button>
-        </div>
+        <p class="ausg-muted">Gegraben wird per Klick auf ein abgestecktes Feld der Szene, solange links die Kategorie „Drachenchronik“ aktiv ist. Nach einer Rückfrage wird die Leitung ausgelost, gewürfelt und das Feld aufgedeckt.</p>
+        {{#unless picking}}<div class="ausg-row">
+          <button type="button" data-action="pick" class="primary"><i class="fa-solid fa-trowel"></i> Zum Graben wechseln</button>
+        </div>{{/unless}}
         <label class="ausg-lead">Leitung für den nächsten Abschnitt
           <select data-leader>
             <option value="">auslosen (Standard)</option>

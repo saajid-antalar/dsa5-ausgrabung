@@ -22,7 +22,7 @@ function buildHud() {
       window: { title: "Ausgrabung", icon: "fa-solid fa-trowel", resizable: true },
       position: { width: 340, height: "auto", top: 70, left: Math.max(20, window.innerWidth - 340 - 330) },
       actions: {
-        pick: function () { setPicking(!isPicking()); this.render(); },
+        pick: function () { setPicking(true); },
         viewScene: function () { findDigScene()?.view(); }
       }
     };
